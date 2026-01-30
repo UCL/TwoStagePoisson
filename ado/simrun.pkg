@@ -1,0 +1,13 @@
+v 3
+d simrun: manage running of simulation study
+d Program by Ian White
+d Version 0.1.1
+d Distribution-Date: 22jan2021
+f simrun.ado
+f simcombine.ado
+f simsetup.ado
+f simrecreate.ado
+
+* files for demo
+f simrun.do 
+f mysim.do 

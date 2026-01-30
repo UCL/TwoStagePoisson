@@ -1,0 +1,1343 @@
+---------------------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  C:\ian\git\TwoStagePoisson\simulation\twoSPsimrun.log
+  log type:  text
+ opened on:  30 Jan 2026, 12:48:59
+
+. /*
+> twoSPsimrun.do
+> Simulation study to evaluate two-stage Poisson (2SP) method for meta-analysis of TTE data
+> Main program
+> 2000 reps of 5 studies takes ~0.5-1hs; of 20 studies, 2-3h
+> IW Sep 2025
+> 1oct2025 matches updated simrun.ado
+> 19dec2025 for paper v0.3
+> 29jan2026 for paper v0.4
+> */
+. 
+. // User-specific settings
+. cd C:\ian\git\TwoStagePoisson\simulation
+C:\ian\git\TwoStagePoisson\simulation
+
+. adopath ++ C:\ian\git\TwoStagePoisson\ado
+  [1]              "C:\ian\git\TwoStagePoisson\ado"
+  [2]  (BASE)      "C:\Program Files\StataNow19\ado\base/"
+  [3]  (SITE)      "C:\Program Files\StataNow19\ado\site/"
+  [4]              "."
+  [5]  (PERSONAL)  "c:\ian\ado\personal/"
+  [6]  (PLUS)      "c:\ian\ado\plus/"
+  [7]  (OLDPLACE)  "c:\ado/"
+
+. set scheme mrc
+
+. 
+. // SET UP DGMS
+. prog drop _all
+
+. cap frame create simrun_settings
+
+. frame change simrun_settings
+
+. clear 
+
+. makegrid tau, values(0 0.3)
+(2 observations created)
+
+. makegrid gamma, values(-6 -5 -4)
+(4 observations created)
+
+. makegrid aratio, values(1 2)
+(6 observations created)
+
+. makegrid studies, values(5 20)
+(12 observations created)
+
+. gen bx = .4 
+
+. gen beta = -0.3
+
+. gen cens = 5
+
+. gen nobslow = 300
+
+. gen nobsupp = 1000
+
+. gen px = .4
+
+. 
+. gen reps = 2000
+
+. gen seed = 42
+
+. gsort studies -tau gamma aratio // start with k=5 (faster), and tau=0.3 (more problematic)
+
+. 
+. * load the simulation program
+. do twoSPsimprog
+
+. /*
+> Simulation study to evaluate two-stage Poisson (2SP) method for meta-analysis of TTE data
+> Simulation definition program (see twoSPsimrun for the main program)
+> IW 10sep2025
+> v0.2 IW 17sep2025
+> 19sep2025: 1SC now stratifies, not adjusts (faster)
+> 1oct2025: two programs, for revised simrun
+> */
+. cap program drop twoSPsimgen
+
+. cap program drop twoSPsimana
+
+. 
+. program define twoSPsimgen, rclass
+  1. 
+. // FOR SIMRUN
+. local inputs studies nobslow nobsupp px aratio gamma bx beta tau cens
+  2. if "`0'"=="?" {
+  3.         return local inputs `inputs'
+  4.         exit
+  5. }
+  6. 
+. // GENERATE THE DATA
+. version 14
+  7. syntax, studies(int) nobslow(int) nobsupp(int) px(real) aratio(real) gamma(real) bx(real
+> ) beta(real) tau(real) cens(real)
+  8. assert `studies'>1
+  9. assert inrange(`px',0,1)
+ 10. assert `aratio'>0
+ 11. clear
+ 12. qui set obs `studies'
+ 13. gen study = _n
+ 14. gen nobs = runiformint(`nobslow',`nobsupp')
+ 15. gen bz = rnormal(`beta',`tau')
+ 16. qui expand nobs
+ 17. drop nobs
+ 18. sort study
+ 19. by study: gen id = _n
+ 20. gen x = runiform()<`px'
+ 21. gen z = runiform()>1/(1+`aratio')
+ 22. gen t = -log(runiform())/exp(`gamma'+`bx'*x+bz*z)
+ 23. gen d = t<=`cens'
+ 24. qui replace t = `cens' if !d
+ 25. drop bz
+ 26. stset t, failure(d)
+ 27. 
+. * Form 2-stage data
+. byvar study, b(z) se(z) generate unique: stcox z x
+ 28. rename Bz_ b
+ 29. rename Sz_ se
+ 30. assert mi(b)==(id>1)
+ 31. egen d1 = sum(d*z), by(study)
+ 32. egen d0 = sum(d*(1-z)), by(study)
+ 33. egen p1 = sum(t*z), by(study)
+ 34. egen p0 = sum(t*(1-z)), by(study)
+ 35. foreach var of varlist d? p? {
+ 36.         qui replace `var' = . if id>1
+ 37. }
+ 38. * handle single-zero studies
+. qui replace b = ln(d1+.5)-ln(p1)-ln(d0+.5)+ln(p0) if min(d0,d1)==0 
+ 39. qui replace se = sqrt( 1/(d1+.5) + 1/(d0+.5) )    if min(d0,d1)==0
+ 40. * handle double-zero studies
+. qui replace b = . if max(d0,d1)==0
+ 41. qui replace se = . if max(d0,d1)==0
+ 42. 
+. end
+
+. 
+. /************** end of twoSPsimgen ******************/
+. 
+. /************** start of twoSPsimana ******************/
+. 
+. prog def twoSPsimana, rclass
+  1. 
+. * descriptive outputs
+. local outputs n d singlezeroes doublezeroes sdb sdbw
+  2. * analysis outputs
+. foreach method in 1SC 2SN 2SPU 2SPW 2SN_REML 2SN_ML 2SPU_ML 2SPW_ML 2SPU_MLc 2SPW_MLc {
+  3.         local outputs `outputs' b`method' s`method' tau`method' error`method' 
+  4. }
+  5. if "`0'"=="?" {
+  6.         return local outputs `outputs'
+  7.         exit
+  8. }
+  9. 
+. // DESCRIPTIVE STATISTICS
+. sum d, meanonly
+ 10. local n=r(N)
+ 11. local d=r(sum)
+ 12. qui count if d0==0 & d1==0 & id==1
+ 13. local doublezeroes = r(N)
+ 14. qui count if (d0==0 | d1==0) & id==1
+ 15. local singlezeroes = r(N)-`doublezeroes'
+ 16. * var(b)
+. qui sum b
+ 17. local sdb = r(sd)
+ 18. qui sum b [w=1/se^2]
+ 19. local sdbw = r(sd)
+ 20. 
+. // ANALYSE THE DATA
+. * Method 1: one-stage Cox
+. timer on 1
+ 21. cap stcox z x, strata(study)
+ 22. timer off 1
+ 23. if _rc==1 exit 1
+ 24. if _rc==0 {
+ 25.         local method 1SC
+ 26.         local b`method' = _b[z]
+ 27.         local s`method' = _se[z]
+ 28.         local tau`method' = 0
+ 29.         local error`method' = !e(converged)
+ 30. }
+ 31. 
+. * reduce to two-stage data
+. keep if id==1
+ 32. 
+. * CE Method 2: 2-stage Normal
+. timer on 2
+ 33. cap metan b se, nograph model(iv)
+ 34. timer off 2
+ 35. if _rc==1 exit 1
+ 36. if _rc==0 {
+ 37.         local method 2SN
+ 38.         local b`method' = r(eff)
+ 39.         local s`method' = r(se_eff)
+ 40.         local tau`method' = 0
+ 41.         local error`method' = 0
+ 42. }
+ 43. 
+. * CE method 3: 2-stage Poisson, unweighted
+. timer on 3
+ 44. cap meta2p b se, d(d1 d0) py(p1 p0) study(study)
+ 45. timer off 3
+ 46. if _rc==1 exit 1
+ 47. if _rc==0 {
+ 48.         local method 2SPU
+ 49.         local b`method' = r(eff)
+ 50.         local s`method' = r(se_eff)
+ 51.         local tau`method' = 0
+ 52.         local error`method' = r(error)
+ 53. }
+ 54. 
+. * CE method 4: 2-stage Poisson, weighted
+. timer on 4
+ 55. cap meta2p b se, d(d1 d0) py(p1 p0) study(study) wt
+ 56. timer off 4
+ 57. if _rc==1 exit 1
+ 58. if _rc==0 {
+ 59.         local method 2SPW
+ 60.         local b`method' = r(eff)
+ 61.         local s`method' = r(se_eff)
+ 62.         local tau`method' = 0
+ 63.         local error`method' = r(error)
+ 64. }
+ 65. 
+. * RE Method 5: 2-stage Normal, REML
+. timer on 5
+ 66. cap metan b se, nograph model(reml)
+ 67. timer off 5
+ 68. if _rc==1 exit 1
+ 69. if _rc==0 {
+ 70.         local method 2SN_REML
+ 71.         local b`method' = r(eff)
+ 72.         local s`method' = r(se_eff)
+ 73.         local tau`method' = sqrt(r(tausq))
+ 74.         local error`method' = 0
+ 75. }
+ 76. 
+. * RE Method 6: 2-stage Normal, ML
+. timer on 6
+ 77. cap metan b se, nograph model(ml)
+ 78. timer off 6
+ 79. if _rc==1 exit 1
+ 80. if _rc==0 {
+ 81.         local method 2SN_ML
+ 82.         local b`method' = r(eff)
+ 83.         local s`method' = r(se_eff)
+ 84.         local tau`method' = sqrt(r(tausq))
+ 85.         local error`method' = 0
+ 86. }
+ 87. 
+. * RE method 7: 2-stage Poisson, unweighted
+. timer on 7
+ 88. cap meta2p b se, d(d1 d0) py(p1 p0) study(study) re 
+ 89. timer off 7
+ 90. if _rc==1 exit 1
+ 91. if _rc==0 {
+ 92.         local method 2SPU_ML
+ 93.         local b`method' = r(eff)
+ 94.         local s`method' = r(se_eff)
+ 95.         local tau`method' = sqrt(r(tausq))
+ 96.         local error`method' = r(error)
+ 97. }
+ 98. 
+. * RE method 8: 2-stage Poisson, weighted
+. timer on 8
+ 99. cap meta2p b se, d(d1 d0) py(p1 p0) study(study) re wt
+100. timer off 8
+101. if _rc==1 exit 1
+102. if _rc==0 {
+103.         local method 2SPW_ML
+104.         local b`method' = r(eff)
+105.         local s`method' = r(se_eff)
+106.         local tau`method' = sqrt(r(tausq))
+107.         local error`method' = r(error)
+108. }
+109. 
+. * RE method 9: 2-stage Poisson, unweighted, centred
+. timer on 9
+110. cap meta2p b se, d(d1 d0) py(p1 p0) study(study) re centre
+111. timer off 9
+112. if _rc==1 exit 1
+113. if _rc==0 {
+114.         local method 2SPU_MLc
+115.         local b`method' = r(eff)
+116.         local s`method' = r(se_eff)
+117.         local tau`method' = sqrt(r(tausq))
+118.         local error`method' = r(error)
+119. }
+120. 
+. * RE method 10: 2-stage Poisson, weighted, centred
+. timer on 10
+121. cap meta2p b se, d(d1 d0) py(p1 p0) study(study) re wt centre
+122. timer off 10
+123. if _rc==1 exit 1
+124. if _rc==0 {
+125.         local method 2SPW_MLc
+126.         local b`method' = r(eff)
+127.         local s`method' = r(se_eff)
+128.         local tau`method' = sqrt(r(tausq))
+129.         local error`method' = r(error)
+130. }
+131. 
+. foreach output of local outputs {
+132.         if !mi("``output''") return scalar `output' = ``output''
+133.         else return scalar `output' = .
+134. }
+135. 
+. end
+
+. 
+. /************** end of twoSPsimana ******************/
+. 
+. 
+end of do-file
+
+. 
+. simsetup, name(twoSPsimprog) prog(twoSPsimgen twoSPsimana)
+
+. timer clear
+
+. simrun, append
+Current state of simulation:
+
+     +-----------------------------------------------------------------------------------+
+  1. | studies | nobslow | nobsupp | px | aratio | gamma | bx | beta | tau | cens | reps |
+     |       5 |     300 |    1000 | .4 |      1 |    -6 | .4 |  -.3 |  .3 |    5 | 2000 |
+     |-----------------------------------------------------------------------------------|
+     |                                     donereps                                      |
+     |                                         2000                                      |
+     +-----------------------------------------------------------------------------------+
+
+     +-----------------------------------------------------------------------------------+
+  2. | studies | nobslow | nobsupp | px | aratio | gamma | bx | beta | tau | cens | reps |
+     |       5 |     300 |    1000 | .4 |      2 |    -6 | .4 |  -.3 |  .3 |    5 | 2000 |
+     |-----------------------------------------------------------------------------------|
+     |                                     donereps                                      |
+     |                                         2000                                      |
+     +-----------------------------------------------------------------------------------+
+
+     +-----------------------------------------------------------------------------------+
+  3. | studies | nobslow | nobsupp | px | aratio | gamma | bx | beta | tau | cens | reps |
+     |       5 |     300 |    1000 | .4 |      1 |    -5 | .4 |  -.3 |  .3 |    5 | 2000 |
+     |-----------------------------------------------------------------------------------|
+     |                                     donereps                                      |
+     |                                         2000                                      |
+     +-----------------------------------------------------------------------------------+
+
+     +-----------------------------------------------------------------------------------+
+  4. | studies | nobslow | nobsupp | px | aratio | gamma | bx | beta | tau | cens | reps |
+     |       5 |     300 |    1000 | .4 |      2 |    -5 | .4 |  -.3 |  .3 |    5 | 2000 |
+     |-----------------------------------------------------------------------------------|
+     |                                     donereps                                      |
+     |                                         2000                                      |
+     +-----------------------------------------------------------------------------------+
+
+     +-----------------------------------------------------------------------------------+
+  5. | studies | nobslow | nobsupp | px | aratio | gamma | bx | beta | tau | cens | reps |
+     |       5 |     300 |    1000 | .4 |      1 |    -4 | .4 |  -.3 |  .3 |    5 | 2000 |
+     |-----------------------------------------------------------------------------------|
+     |                                     donereps                                      |
+     |                                         2000                                      |
+     +-----------------------------------------------------------------------------------+
+
+     +-----------------------------------------------------------------------------------+
+  6. | studies | nobslow | nobsupp | px | aratio | gamma | bx | beta | tau | cens | reps |
+     |       5 |     300 |    1000 | .4 |      2 |    -4 | .4 |  -.3 |  .3 |    5 | 2000 |
+     |-----------------------------------------------------------------------------------|
+     |                                     donereps                                      |
+     |                                         2000                                      |
+     +-----------------------------------------------------------------------------------+
+
+     +-----------------------------------------------------------------------------------+
+  7. | studies | nobslow | nobsupp | px | aratio | gamma | bx | beta | tau | cens | reps |
+     |       5 |     300 |    1000 | .4 |      1 |    -6 | .4 |  -.3 |   0 |    5 | 2000 |
+     |-----------------------------------------------------------------------------------|
+     |                                     donereps                                      |
+     |                                         2000                                      |
+     +-----------------------------------------------------------------------------------+
+
+     +-----------------------------------------------------------------------------------+
+  8. | studies | nobslow | nobsupp | px | aratio | gamma | bx | beta | tau | cens | reps |
+     |       5 |     300 |    1000 | .4 |      2 |    -6 | .4 |  -.3 |   0 |    5 | 2000 |
+     |-----------------------------------------------------------------------------------|
+     |                                     donereps                                      |
+     |                                         2000                                      |
+     +-----------------------------------------------------------------------------------+
+
+     +-----------------------------------------------------------------------------------+
+  9. | studies | nobslow | nobsupp | px | aratio | gamma | bx | beta | tau | cens | reps |
+     |       5 |     300 |    1000 | .4 |      1 |    -5 | .4 |  -.3 |   0 |    5 | 2000 |
+     |-----------------------------------------------------------------------------------|
+     |                                     donereps                                      |
+     |                                         2000                                      |
+     +-----------------------------------------------------------------------------------+
+
+     +-----------------------------------------------------------------------------------+
+ 10. | studies | nobslow | nobsupp | px | aratio | gamma | bx | beta | tau | cens | reps |
+     |       5 |     300 |    1000 | .4 |      2 |    -5 | .4 |  -.3 |   0 |    5 | 2000 |
+     |-----------------------------------------------------------------------------------|
+     |                                     donereps                                      |
+     |                                         2000                                      |
+     +-----------------------------------------------------------------------------------+
+
+     +-----------------------------------------------------------------------------------+
+ 11. | studies | nobslow | nobsupp | px | aratio | gamma | bx | beta | tau | cens | reps |
+     |       5 |     300 |    1000 | .4 |      1 |    -4 | .4 |  -.3 |   0 |    5 | 2000 |
+     |-----------------------------------------------------------------------------------|
+     |                                     donereps                                      |
+     |                                         2000                                      |
+     +-----------------------------------------------------------------------------------+
+
+     +-----------------------------------------------------------------------------------+
+ 12. | studies | nobslow | nobsupp | px | aratio | gamma | bx | beta | tau | cens | reps |
+     |       5 |     300 |    1000 | .4 |      2 |    -4 | .4 |  -.3 |   0 |    5 | 2000 |
+     |-----------------------------------------------------------------------------------|
+     |                                     donereps                                      |
+     |                                         2000                                      |
+     +-----------------------------------------------------------------------------------+
+
+     +-----------------------------------------------------------------------------------+
+ 13. | studies | nobslow | nobsupp | px | aratio | gamma | bx | beta | tau | cens | reps |
+     |      20 |     300 |    1000 | .4 |      1 |    -6 | .4 |  -.3 |  .3 |    5 | 2000 |
+     |-----------------------------------------------------------------------------------|
+     |                                     donereps                                      |
+     |                                         2000                                      |
+     +-----------------------------------------------------------------------------------+
+
+     +-----------------------------------------------------------------------------------+
+ 14. | studies | nobslow | nobsupp | px | aratio | gamma | bx | beta | tau | cens | reps |
+     |      20 |     300 |    1000 | .4 |      2 |    -6 | .4 |  -.3 |  .3 |    5 | 2000 |
+     |-----------------------------------------------------------------------------------|
+     |                                     donereps                                      |
+     |                                         2000                                      |
+     +-----------------------------------------------------------------------------------+
+
+     +-----------------------------------------------------------------------------------+
+ 15. | studies | nobslow | nobsupp | px | aratio | gamma | bx | beta | tau | cens | reps |
+     |      20 |     300 |    1000 | .4 |      1 |    -5 | .4 |  -.3 |  .3 |    5 | 2000 |
+     |-----------------------------------------------------------------------------------|
+     |                                     donereps                                      |
+     |                                         2000                                      |
+     +-----------------------------------------------------------------------------------+
+
+     +-----------------------------------------------------------------------------------+
+ 16. | studies | nobslow | nobsupp | px | aratio | gamma | bx | beta | tau | cens | reps |
+     |      20 |     300 |    1000 | .4 |      2 |    -5 | .4 |  -.3 |  .3 |    5 | 2000 |
+     |-----------------------------------------------------------------------------------|
+     |                                     donereps                                      |
+     |                                         2000                                      |
+     +-----------------------------------------------------------------------------------+
+
+     +-----------------------------------------------------------------------------------+
+ 17. | studies | nobslow | nobsupp | px | aratio | gamma | bx | beta | tau | cens | reps |
+     |      20 |     300 |    1000 | .4 |      1 |    -4 | .4 |  -.3 |  .3 |    5 | 2000 |
+     |-----------------------------------------------------------------------------------|
+     |                                     donereps                                      |
+     |                                         2000                                      |
+     +-----------------------------------------------------------------------------------+
+
+     +-----------------------------------------------------------------------------------+
+ 18. | studies | nobslow | nobsupp | px | aratio | gamma | bx | beta | tau | cens | reps |
+     |      20 |     300 |    1000 | .4 |      2 |    -4 | .4 |  -.3 |  .3 |    5 | 2000 |
+     |-----------------------------------------------------------------------------------|
+     |                                     donereps                                      |
+     |                                         2000                                      |
+     +-----------------------------------------------------------------------------------+
+
+     +-----------------------------------------------------------------------------------+
+ 19. | studies | nobslow | nobsupp | px | aratio | gamma | bx | beta | tau | cens | reps |
+     |      20 |     300 |    1000 | .4 |      1 |    -6 | .4 |  -.3 |   0 |    5 | 2000 |
+     |-----------------------------------------------------------------------------------|
+     |                                     donereps                                      |
+     |                                         2000                                      |
+     +-----------------------------------------------------------------------------------+
+
+     +-----------------------------------------------------------------------------------+
+ 20. | studies | nobslow | nobsupp | px | aratio | gamma | bx | beta | tau | cens | reps |
+     |      20 |     300 |    1000 | .4 |      2 |    -6 | .4 |  -.3 |   0 |    5 | 2000 |
+     |-----------------------------------------------------------------------------------|
+     |                                     donereps                                      |
+     |                                         2000                                      |
+     +-----------------------------------------------------------------------------------+
+
+     +-----------------------------------------------------------------------------------+
+ 21. | studies | nobslow | nobsupp | px | aratio | gamma | bx | beta | tau | cens | reps |
+     |      20 |     300 |    1000 | .4 |      1 |    -5 | .4 |  -.3 |   0 |    5 | 2000 |
+     |-----------------------------------------------------------------------------------|
+     |                                     donereps                                      |
+     |                                         2000                                      |
+     +-----------------------------------------------------------------------------------+
+
+     +-----------------------------------------------------------------------------------+
+ 22. | studies | nobslow | nobsupp | px | aratio | gamma | bx | beta | tau | cens | reps |
+     |      20 |     300 |    1000 | .4 |      2 |    -5 | .4 |  -.3 |   0 |    5 | 2000 |
+     |-----------------------------------------------------------------------------------|
+     |                                     donereps                                      |
+     |                                         2000                                      |
+     +-----------------------------------------------------------------------------------+
+
+     +-----------------------------------------------------------------------------------+
+ 23. | studies | nobslow | nobsupp | px | aratio | gamma | bx | beta | tau | cens | reps |
+     |      20 |     300 |    1000 | .4 |      1 |    -4 | .4 |  -.3 |   0 |    5 | 2000 |
+     |-----------------------------------------------------------------------------------|
+     |                                     donereps                                      |
+     |                                         2000                                      |
+     +-----------------------------------------------------------------------------------+
+
+     +-----------------------------------------------------------------------------------+
+ 24. | studies | nobslow | nobsupp | px | aratio | gamma | bx | beta | tau | cens | reps |
+     |      20 |     300 |    1000 | .4 |      2 |    -4 | .4 |  -.3 |   0 |    5 | 2000 |
+     |-----------------------------------------------------------------------------------|
+     |                                     donereps                                      |
+     |                                         2000                                      |
+     +-----------------------------------------------------------------------------------+
+Nothing to do
+
+. timer list
+
+. 
+. 
+. // DESCRIPTIVE
+. simcombine 
+Reading 24 files........................
+Results loaded into current frame simrun_results
+
+. foreach var in d n singlezeroes doublezeroes {
+  2.         replace `var'=`var'/studies
+  3. }
+(48,000 real changes made)
+(48,000 real changes made)
+(9,397 real changes made)
+(541 real changes made)
+
+. foreach var in singlezeroes doublezeroes {
+  2.         replace `var'=100*`var'
+  3. }
+(9,397 real changes made)
+(541 real changes made)
+
+. summ d n singlezeroes doublezeroes 
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+           d |     48,000    29.52993    21.60093        2.2         94
+           n |     48,000    651.0702    71.20509        384      915.2
+singlezeroes |     48,000    2.616563    6.583188          0         80
+doublezeroes |     48,000    .0865625    1.010532          0         20
+
+. collapse (mean) d single doublez, by(gamma tau aratio)
+
+. order gamma tau aratio
+
+. format d %6.0f
+
+. format *zeroes %6.1f
+
+. l, noo clean abb(20)
+
+    gamma         tau   aratio    d   singlezeroes   doublezeroes  
+       -6           0        1    8            6.5            0.2  
+       -6           0        2    8            7.9            0.2  
+       -6   .30000001        1    8            7.4            0.2  
+       -6   .30000001        2    8            8.7            0.3  
+       -5           0        1   22            0.1            0.0  
+       -5           0        2   21            0.2            0.0  
+       -5   .30000001        1   23            0.3            0.0  
+       -5   .30000001        2   22            0.3            0.0  
+       -4           0        1   59            0.0            0.0  
+       -4           0        2   56            0.0            0.0  
+       -4   .30000001        1   60            0.0            0.0  
+       -4   .30000001        2   58            0.0            0.0  
+
+. 
+. 
+. // NON-CONVERGENCE
+. simcombine
+Reading 24 files........................
+Results loaded into current frame simrun_results
+
+. mvpatterns b2SPU_ML b2SPU_MLc b2SPW_ML b2SPW_MLc
+Variable     | type     obs   mv   variable label
+-------------+-----------------------------------
+b2SPU_ML     | float  47535  465   
+b2SPU_MLc    | float  47793  207   
+b2SPW_ML     | float  47588  412   
+b2SPW_MLc    | float  47803  197   
+-------------------------------------------------
+
+Patterns of missing values
+
+  +------------------------+
+  | _pattern   _mv   _freq |
+  |------------------------|
+  |     ++++     0   46750 |
+  |     .+++     1     442 |
+  |     ++.+     1     389 |
+  |     +.++     1     198 |
+  |     +++.     1     190 |
+  |------------------------|
+  |     .+.+     2      21 |
+  |     +.+.     2       6 |
+  |     +..+     2       2 |
+  |     .++.     2       1 |
+  |     ..++     2       1 |
+  +------------------------+
+
+. 
+. 
+. // COMPARE UNWEIGHTED AND WEIGHTED METHODS
+. simcombine
+Reading 24 files........................
+Results loaded into current frame simrun_results
+
+. drop error* tau?*
+
+. siman setup, dgm(aratio gamma studies tau) rep(rep) est(b) se(s) method(2SPU 2SPW 2SPU_ML 2
+> SPW_ML) true(beta)
+Warning: siman setup found unwanted variables: nobslow nobsupp px bx cens n d singlezeroes
+  doublezeroes sdb sdbw b1SC s1SC b2SN s2SN b2SN_REML s2SN_REML b2SN_ML s2SN_ML b2SPU_MLc
+  s2SPU_MLc b2SPW_MLc s2SPW_MLc
+
+                   SUMMARY OF DATA
+_____________________________________________________
+
+Data-generating mechanism (DGM)
+  DGM variables (# levels):       aratio (2) gamma (3) studies (2) tau (2) 
+  Total number of DGMs:           24
+
+Targets
+  Variable containing targets:    -
+  Number of targets:              1
+  Target values:                  
+
+Methods
+  Variable containing methods:    method
+  Number of methods:              4
+  Method values:                  2SPU; 2SPW; 2SPU_ML; 2SPW_ML
+
+Repetition-level output
+  Point estimate variable:        b
+  SE variable:                    s
+  df variable:                    -
+  Conf. limit variables:          -
+  p-value variable:               -
+  True value variable:            beta
+
+Estimates data                    in data
+Performance statistics            not in data
+_____________________________________________________
+
+. siman ana
+siman analyse has run successfully
+
+. siman nes pctbias modelse ///
+>         if inlist(method,"2SPU":methodlabel,"2SPW":methodlabel), ///
+>         legend(pos(3) col(1)) stagger(.05) $PPT ///
+>         dglabsize(small) lw(*2 = = =) dglwidth(*2) ///
+>         lcol(red =) lpat(solid dash) ///
+>         name(weightingCE,replace)
+siman nestloop will draw 2 graphs (1 targets * 2 performance measures)
+
+. siman nes pctbias modelse ///
+>         if inlist(method,"2SPU_ML":methodlabel,"2SPW_ML":methodlabel), ///
+>         legend(pos(3) col(1)) stagger(.05) $PPT ///
+>         dglabsize(small) lw(*2 = = =) dglwidth(*2) ///
+>         lcol(red =) lpat(solid dash) ///
+>         name(weightingRE,replace)
+siman nestloop will draw 2 graphs (1 targets * 2 performance measures)
+
+. table gamma studies if rep<0 & _perf=="pctbias", stat(max s) stat(min s) nformat(%6.3f)
+
+------------------------------------------
+                  |         studies       
+                  |      5      20   Total
+------------------+-----------------------
+gamma             |                       
+  -6              |                       
+    Maximum value |  2.911   1.312   2.911
+    Minimum value |  2.509   1.175   1.175
+  -5              |                       
+    Maximum value |  1.880   0.916   1.880
+    Minimum value |  1.490   0.726   0.726
+  -4              |                       
+    Maximum value |  1.451   0.720   1.451
+    Minimum value |  0.897   0.447   0.447
+  Total           |                       
+    Maximum value |  2.911   1.312   2.911
+    Minimum value |  0.897   0.447   0.447
+------------------------------------------
+
+. * pctbias: Monte Carlo error varies from 0.9 to 2.7 with 5 studies and from 0.4 to 1.3 with
+>  20 studies
+. * modelse: Monte Carlo error < 0.003
+. 
+. 
+. // COMPARE UNCENTRED AND CENTRED METHODS
+. simcombine
+Reading 24 files........................
+Results loaded into current frame simrun_results
+
+. drop error* tau?*
+
+. siman setup, dgm(aratio gamma studies tau) rep(rep) est(b) se(s) method(2SN_REML 2SN_ML 2SP
+> U_MLc 2SPU_ML) true(beta)
+Warning: siman setup found unwanted variables: nobslow nobsupp px bx cens n d singlezeroes
+  doublezeroes sdb sdbw b1SC s1SC b2SN s2SN b2SPU s2SPU b2SPW s2SPW b2SPW_ML s2SPW_ML
+  b2SPW_MLc s2SPW_MLc
+
+                   SUMMARY OF DATA
+_____________________________________________________
+
+Data-generating mechanism (DGM)
+  DGM variables (# levels):       aratio (2) gamma (3) studies (2) tau (2) 
+  Total number of DGMs:           24
+
+Targets
+  Variable containing targets:    -
+  Number of targets:              1
+  Target values:                  
+
+Methods
+  Variable containing methods:    method
+  Number of methods:              4
+  Method values:                  2SN_REML; 2SN_ML; 2SPU_MLc; 2SPU_ML
+
+Repetition-level output
+  Point estimate variable:        b
+  SE variable:                    s
+  df variable:                    -
+  Conf. limit variables:          -
+  p-value variable:               -
+  True value variable:            beta
+
+Estimates data                    in data
+Performance statistics            not in data
+_____________________________________________________
+
+. siman ana
+siman analyse has run successfully
+
+. siman nes pctbias cover, ///
+>         legend(pos(3) col(1)) stagger(.05) $PPT ///
+>         dglabsize(small) lw(*2 = = =) dglwidth(*2) ///
+>         lcol(blue = red =) lpat(solid dash solid dash) ///
+>         name(centring,replace)
+siman nestloop will draw 2 graphs (1 targets * 2 performance measures)
+
+. * pctbias: Monte Carlo error varies from 0.9 to 2.9 with 5 studies and from 0.4 to 1.3 with
+>  20 studies
+. * cover: Monte Carlo error varies from 0.3 to 0.9%
+. 
+. 
+. // SCATTER PLOT OF DISCREPANCIES FROM 1SC: HOM, CE METHODS
+. simcombine
+Reading 24 files........................
+Results loaded into current frame simrun_results
+
+. drop error* tau1* tau2* s1* s2*
+
+. foreach method in 2SN 2SPU {
+  2.         gen e`method' = b`method' - b1SC
+  3. }
+
+. reshape long e, i(studies aratio gamma tau rep) j(method) string
+(j = 2SN 2SPU)
+
+Data                               Wide   ->   Long
+-----------------------------------------------------------------------------
+Number of observations           48,000   ->   96,000      
+Number of variables                  29   ->   29          
+j variable (2 values)                     ->   method
+xij variables:
+                             e2SN e2SPU   ->   e
+-----------------------------------------------------------------------------
+
+. label var e "Discrepancy from 1-stage Cox"
+
+. label var b1SC "1-stage Cox"
+
+. egen emean = mean(e), by(aratio method)
+
+. gen zero=0
+
+. recast double tau
+
+. replace tau = round(tau,.1)
+(48,000 real changes made)
+
+. keep if studies==5 & tau==0
+(72,000 observations deleted)
+
+. *scatter e b1SC, mcol(blue) || line emean zero b1SC, lcol(blue black) by(method aratio gamm
+> a, legend(off) col(3) note("") t2title(gamma=-6                  gamma=-5                  
+> gamma=-4)) ytitle("      2-stage Poisson                   2-stage Normal" "     aratio=2  
+>       aratio=1        aratio=2        aratio=1") subtitle("")
+. scatter e b1SC, mcol(blue) || line emean zero b1SC, lcol(blue black) by(method gamma aratio
+> , legend(off) col(6) note("") t2title("gamma=-6                                      gamma=
+> -5                                      gamma=-4" "aratio=1                aratio=2        
+>         aratio=1                aratio=2                aratio=1                aratio=2"))
+>  ytitle("      2-stage Poisson                   2-stage Normal") xsize(9) ysize(5) subtitl
+> e("") name(discrep_ref,replace)
+
+. 
+. replace method = "2-stage Normal" if method=="2SN"
+variable method was str4 now str14
+(12,000 real changes made)
+
+. replace method = "2-stage Poisson" if method=="2SPU"
+variable method was str14 now str15
+(12,000 real changes made)
+
+. label var sdb "Standard deviation of point estimates"
+
+. scatter e sdb if gamma==-6 & aratio==1, by(method, legend(off) note("")) $PPT name(discrep_
+> sd,replace)
+
+. scatter e sdbw if gamma==-6 & aratio==1, by(method, legend(off) note("")) $PPT name(discrep
+> _sdw,replace)
+
+. 
+. * compare discriminatory ability of sdb and sdbw
+. gen discrep = abs(e)>=0.05 if !mi(e)
+
+. roccomp discrep sdb sdbw, graph name(roccomp,replace) summary plot1opts(ms(i)) plot2(ms(i))
+
+                              ROC                     Asymptotic normal
+                   Obs       area     Std. err.      [95% conf. interval]
+-------------------------------------------------------------------------
+sdb             24,000     0.9013       0.0024        0.89667     0.90596
+sdbw            24,000     0.8863       0.0026        0.88108     0.89144
+-------------------------------------------------------------------------
+H0: area(sdb) = area(sdbw)
+    chi2(1) =    89.56       Prob>chi2 =   0.0000
+
+. 
+. 
+. // ANALYSE ESTIMATES OF MU
+. simcombine
+Reading 24 files........................
+Results loaded into current frame simrun_results
+
+. drop error* tau?*
+
+. * drop all 2SP weighted
+. drop b2SPW s2SPW b2SPW_ML s2SPW_ML b2SPW_MLc s2SPW_MLc
+
+. * drop all 2SP ML uncentred
+. drop b2SPU_ML s2SPU_ML
+
+. * naming doesn't need to include U and c
+. rename (*2SPU*) (*2SP*)
+
+. rename (*MLc) (*ML)
+
+. siman setup, dgm(aratio gamma studies tau) rep(rep) est(b) se(s) method(1SC 2SN 2SP 2SN_REM
+> L 2SP_ML) true(beta)
+Warning: siman setup found unwanted variables: nobslow nobsupp px bx cens n d singlezeroes
+  doublezeroes sdb sdbw b2SN_ML s2SN_ML
+
+                   SUMMARY OF DATA
+_____________________________________________________
+
+Data-generating mechanism (DGM)
+  DGM variables (# levels):       aratio (2) gamma (3) studies (2) tau (2) 
+  Total number of DGMs:           24
+
+Targets
+  Variable containing targets:    -
+  Number of targets:              1
+  Target values:                  
+
+Methods
+  Variable containing methods:    method
+  Number of methods:              5
+  Method values:                  1SC; 2SN; 2SP; 2SN_REML; 2SP_ML
+
+Repetition-level output
+  Point estimate variable:        b
+  SE variable:                    s
+  df variable:                    -
+  Conf. limit variables:          -
+  p-value variable:               -
+  True value variable:            beta
+
+Estimates data                    in data
+Performance statistics            not in data
+_____________________________________________________
+
+. siman ana
+siman analyse has run successfully
+
+. 
+. * bias & power, homogeneous & CE methods
+. siman tab pctbias empse cover power if tau==0 & method<=3, col(method gamma studies) row(_p
+> erf aratio) nformat(%6.1f)
+
+--------------------------------------------------------------------------------------------------------------------------------------------------
+                    |                                                             method                                                          
+                    |                    1SC                                       2SN                                       2SP                  
+                    |                   gamma                                     gamma                                     gamma                 
+                    |       -6            -5            -4            -6            -5            -4            -6            -5            -4    
+                    |    studies       studies       studies       studies       studies       studies       studies       studies       studies  
+                    |     5     20      5     20      5     20      5     20      5     20      5     20      5     20      5     20      5     20
+--------------------+-----------------------------------------------------------------------------------------------------------------------------
+Performance measure |                                                                                                                             
+  Pctbias           |                                                                                                                             
+    aratio          |                                                                                                                             
+      1             |                                                                                                                             
+        Estimate    |   1.4    3.0   -2.0    0.5   -0.8    0.2   -9.9   -9.1   -5.8   -4.0   -2.1   -1.3    1.6    3.0   -2.0    0.6   -0.7    0.3
+        MCSE        |   2.5    1.2    1.5    0.7    0.9    0.4    2.3    1.1    1.4    0.7    0.9    0.4    2.5    1.2    1.5    0.7    0.9    0.4
+      2             |                                                                                                                             
+        Estimate    |  -4.1    2.7   -4.1    0.1   -1.7    0.2   11.9   18.9    2.3    6.9    0.5    2.7   -4.0    2.7   -4.1    0.2   -1.7    0.2
+        MCSE        |   2.7    1.2    1.5    0.8    0.9    0.5    2.4    1.1    1.4    0.7    0.9    0.5    2.7    1.2    1.5    0.8    0.9    0.5
+  Empse             |                                                                                                                             
+    aratio          |                                                                                                                             
+      1             |                                                                                                                             
+        Estimate    |   0.3    0.2    0.2    0.1    0.1    0.1    0.3    0.1    0.2    0.1    0.1    0.1    0.3    0.2    0.2    0.1    0.1    0.1
+        MCSE        |   0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0
+      2             |                                                                                                                             
+        Estimate    |   0.4    0.2    0.2    0.1    0.1    0.1    0.3    0.1    0.2    0.1    0.1    0.1    0.4    0.2    0.2    0.1    0.1    0.1
+        MCSE        |   0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0
+  Cover             |                                                                                                                             
+    aratio          |                                                                                                                             
+      1             |                                                                                                                             
+        Estimate    |  95.6   95.1   94.3   94.7   94.6   94.6   97.5   97.7   95.6   96.1   95.2   95.0   95.7   94.9   94.3   94.7   94.7   94.7
+        MCSE        |   0.5    0.5    0.5    0.5    0.5    0.5    0.3    0.3    0.5    0.4    0.5    0.5    0.5    0.5    0.5    0.5    0.5    0.5
+      2             |                                                                                                                             
+        Estimate    |  95.5   95.0   95.1   94.3   95.4   94.2   97.8   96.7   96.3   95.4   95.6   94.3   95.4   94.9   94.9   94.3   95.2   93.9
+        MCSE        |   0.5    0.5    0.5    0.5    0.5    0.5    0.3    0.4    0.4    0.5    0.5    0.5    0.5    0.5    0.5    0.5    0.5    0.5
+  Power             |                                                                                                                             
+    aratio          |                                                                                                                             
+      1             |                                                                                                                             
+        Estimate    |  15.0   50.7   33.5   88.0   70.9   99.8    8.6   34.6   29.3   84.9   69.6   99.8   15.1   50.9   33.5   88.2   70.9   99.8
+        MCSE        |   0.8    1.1    1.1    0.7    1.0    0.1    0.6    1.1    1.0    0.8    1.0    0.1    0.8    1.1    1.1    0.7    1.0    0.1
+      2             |                                                                                                                             
+        Estimate    |  16.3   47.2   32.5   85.4   66.7   99.8   14.6   55.3   33.8   89.6   68.3   99.8   16.1   47.3   32.2   85.2   66.6   99.8
+        MCSE        |   0.8    1.1    1.0    0.8    1.1    0.1    0.8    1.1    1.1    0.7    1.0    0.1    0.8    1.1    1.0    0.8    1.1    0.1
+--------------------------------------------------------------------------------------------------------------------------------------------------
+Note: Coverage and Power calculated at 95% level
+
+. siman nes pctbias empse cover power if tau==0 & method<=3, ///
+>         legend(pos(3) col(1)) stagger(.05) $PPT ///
+>         dglabsize(small) lw(*2 ...) dglwidth(*2) ///
+>         lcol(black blue red =) lpat(solid = = dash) name(homCE,replace)
+siman nestloop will draw 4 graphs (1 targets * 4 performance measures)
+
+. * summarise MCSEs
+. table gamma studies if rep<0 & _perf=="pctbias" & tau==0 & method<=3, stat(max s) stat(min 
+> s) nformat(%6.1f)
+
+--------------------------------------
+                  |       studies     
+                  |    5    20   Total
+------------------+-------------------
+gamma             |                   
+  -6              |                   
+    Maximum value |  2.7   1.2     2.7
+    Minimum value |  2.3   1.1     1.1
+  -5              |                   
+    Maximum value |  1.5   0.8     1.5
+    Minimum value |  1.4   0.7     0.7
+  -4              |                   
+    Maximum value |  0.9   0.5     0.9
+    Minimum value |  0.9   0.4     0.4
+  Total           |                   
+    Maximum value |  2.7   1.2     2.7
+    Minimum value |  0.9   0.4     0.4
+--------------------------------------
+
+. * pctbias: MCSE varies from 0.9 to 2.7 with 5 studies and from 0.4 to 1.2 with 20 studies
+. * Empse: MCSE < 0.006
+. * Coverage: MCSE = 0.3 to 0.5%
+. * power: MCSE <= 1.1%
+. 
+. * bias, heterogeneous & RE methods
+. siman tab pctbias empse cover power if tau>0, col(method gamma studies) row(_perf aratio) n
+> format(%6.1f)
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+> --------------------------------------------------------
+                    |                                                                                                                    method                                                         
+>                                                         
+                    |                       1SC                                             2SN                                             2SP                                          2SN_REML       
+>                                 2SP_ML                  
+                    |                      gamma                                           gamma                                           gamma                                          gamma         
+>                                 gamma                   
+                    |        -6              -5              -4              -6              -5              -4              -6              -5              -4              -6              -5         
+>     -4             -6              -5             -4    
+                    |     studies         studies         studies         studies         studies         studies         studies         studies         studies         studies         studies       
+>  studies        studies         studies        studies  
+                    |      5      20       5      20       5      20       5      20       5      20       5      20       5      20       5      20       5      20       5      20       5      20    
+>   5     20       5      20       5      20      5     20
+--------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+> --------------------------------------------------------
+Performance measure |                                                                                                                                                                                   
+>                                                         
+  Pctbias           |                                                                                                                                                                                   
+>                                                         
+    aratio          |                                                                                                                                                                                   
+>                                                         
+      1             |                                                                                                                                                                                   
+>                                                         
+        Estimate    |   -9.2   -14.2   -11.7   -13.5   -10.9   -13.5   -21.8   -27.6   -17.8   -20.2   -13.9   -17.0    -9.1   -14.1   -11.6   -13.4   -10.8   -13.4   -17.6   -26.1   -11.3   -14.9   -
+> 5.8   -7.7    -6.4   -11.6    -8.4    -9.3   -5.7   -6.5
+        MCSE        |    2.7     1.3     1.8     0.9     1.4     0.7     2.4     1.1     1.7     0.8     1.4     0.7     2.7     1.3     1.8     0.9     1.4     0.7     2.5     1.1     1.7     0.8    
+> 1.4    0.7     2.7     1.3     1.8     0.9    1.4    0.7
+      2             |                                                                                                                                                                                   
+>                                                         
+        Estimate    |  -15.3   -16.4   -12.3   -14.4   -11.1   -13.4     1.3     1.6    -4.8    -5.6    -6.9    -8.3   -15.2   -16.4   -12.2   -14.3   -11.1   -13.3    -0.5     1.2    -4.3    -5.3   -
+> 4.0   -5.0   -17.2   -18.2   -10.9   -13.1   -7.2   -8.4
+        MCSE        |    2.8     1.3     1.9     0.9     1.4     0.7     2.5     1.1     1.8     0.8     1.4     0.7     2.8     1.3     1.8     0.9     1.4     0.7     2.6     1.2     1.8     0.9    
+> 1.4    0.7     2.9     1.3     1.9     0.9    1.4    0.7
+  Empse             |                                                                                                                                                                                   
+>                                                         
+    aratio          |                                                                                                                                                                                   
+>                                                         
+      1             |                                                                                                                                                                                   
+>                                                         
+        Estimate    |    0.4     0.2     0.2     0.1     0.2     0.1     0.3     0.2     0.2     0.1     0.2     0.1     0.4     0.2     0.2     0.1     0.2     0.1     0.3     0.2     0.2     0.1    
+> 0.2    0.1     0.4     0.2     0.2     0.1    0.2    0.1
+        MCSE        |    0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0    
+> 0.0    0.0     0.0     0.0     0.0     0.0    0.0    0.0
+      2             |                                                                                                                                                                                   
+>                                                         
+        Estimate    |    0.4     0.2     0.2     0.1     0.2     0.1     0.3     0.2     0.2     0.1     0.2     0.1     0.4     0.2     0.2     0.1     0.2     0.1     0.3     0.2     0.2     0.1    
+> 0.2    0.1     0.4     0.2     0.2     0.1    0.2    0.1
+        MCSE        |    0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0    
+> 0.0    0.0     0.0     0.0     0.0     0.0    0.0    0.0
+  Cover             |                                                                                                                                                                                   
+>                                                         
+    aratio          |                                                                                                                                                                                   
+>                                                         
+      1             |                                                                                                                                                                                   
+>                                                         
+        Estimate    |   92.7    91.8    88.5    86.8    77.2    73.9    95.8    93.7    90.3    87.7    78.0    73.2    92.9    91.9    88.2    86.7    77.2    73.8    96.1    94.6    93.3    92.7   9
+> 0.5   92.3    94.1    94.2    91.4    92.5   87.9   92.0
+        MCSE        |    0.6     0.6     0.7     0.8     0.9     1.0     0.5     0.5     0.7     0.7     0.9     1.0     0.6     0.6     0.7     0.8     0.9     1.0     0.4     0.5     0.6     0.6    
+> 0.7    0.6     0.5     0.5     0.6     0.6    0.7    0.6
+      2             |                                                                                                                                                                                   
+>                                                         
+        Estimate    |   92.7    92.7    88.1    86.6    78.0    75.7    96.2    97.0    90.7    91.8    80.3    80.2    92.6    92.5    88.1    86.8    77.9    75.9    96.3    97.3    93.7    94.3   8
+> 9.8   93.2    93.9    94.2    91.0    91.7   87.5   91.5
+        MCSE        |    0.6     0.6     0.7     0.8     0.9     1.0     0.4     0.4     0.6     0.6     0.9     0.9     0.6     0.6     0.7     0.8     0.9     1.0     0.4     0.4     0.5     0.5    
+> 0.7    0.6     0.5     0.5     0.6     0.6    0.7    0.6
+  Power             |                                                                                                                                                                                   
+>                                                         
+    aratio          |                                                                                                                                                                                   
+>                                                         
+      1             |                                                                                                                                                                                   
+>                                                         
+        Estimate    |   14.9    39.2    31.0    74.7    58.7    94.8     8.3    22.3    26.4    66.8    56.2    93.8    15.1    39.2    31.0    74.5    58.8    94.7     7.9    22.0    20.3    61.2   3
+> 9.8   87.9    13.4    34.2    25.1    66.0   45.7   89.4
+        MCSE        |    0.8     1.1     1.0     1.0     1.1     0.5     0.6     0.9     1.0     1.1     1.1     0.5     0.8     1.1     1.0     1.0     1.1     0.5     0.6     0.9     0.9     1.1    
+> 1.1    0.7     0.8     1.1     1.0     1.1    1.1    0.7
+      2             |                                                                                                                                                                                   
+>                                                         
+        Estimate    |   16.4    35.7    31.2    70.5    56.3    93.3    13.9    42.1    31.5    77.2    58.3    96.0    16.6    35.5    30.9    70.5    56.4    93.4    12.2    40.2    22.8    67.8   3
+> 9.7   87.8    13.7    28.6    24.3    59.7   42.8   85.9
+        MCSE        |    0.8     1.1     1.0     1.0     1.1     0.6     0.8     1.1     1.0     0.9     1.1     0.4     0.8     1.1     1.0     1.0     1.1     0.6     0.7     1.1     0.9     1.0    
+> 1.1    0.7     0.8     1.0     1.0     1.1    1.1    0.8
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+> --------------------------------------------------------
+Note: Coverage and Power calculated at 95% level
+
+. siman nes pctbias empse cover power if tau>0, ///
+>         legend(pos(3) col(1)) stagger(.08) $PPT ///
+>         dglabsize(small) lw(*2 ...) dglwidth(*2) ///
+>         lcol(black blue red blue red) lpat(solid = = dash =) name(het,replace)
+siman nestloop will draw 4 graphs (1 targets * 4 performance measures)
+
+. siman nes power if tau>0 & inlist(method,4,5), ///
+>         legend(pos(3) col(1)) stagger(.08) ylab(0 50 100) $PPT ///
+>         dglabsize(small) lw(*2 ...) dglwidth(*2) ///
+>         lcol(blue red) lpat(dash =) name(het,replace)
+siman nestloop will draw 1 graphs (1 targets * 1 performance measures)
+
+. * summarise MCSEs
+. table gamma studies if rep<0 & _perf=="pctbias" & tau>0, stat(min s) stat(max s) nformat(%6
+> .1f)
+
+--------------------------------------
+                  |       studies     
+                  |    5    20   Total
+------------------+-------------------
+gamma             |                   
+  -6              |                   
+    Minimum value |  2.4   1.1     1.1
+    Maximum value |  2.9   1.3     2.9
+  -5              |                   
+    Minimum value |  1.7   0.8     0.8
+    Maximum value |  1.9   0.9     1.9
+  -4              |                   
+    Minimum value |  1.4   0.7     0.7
+    Maximum value |  1.4   0.7     1.4
+  Total           |                   
+    Minimum value |  1.4   0.7     0.7
+    Maximum value |  2.9   1.3     2.9
+--------------------------------------
+
+. * Pctbias: Monte Carlo error varies from 1.4 to 2.9 with 5 studies and from 0.7 to 1.3 with
+>  20 studies
+. table gamma studies if rep<0 & _perf=="empse" & tau>0, stat(min s) stat(max s) nformat(%6.3
+> f)
+
+------------------------------------------
+                  |         studies       
+                  |      5      20   Total
+------------------+-----------------------
+gamma             |                       
+  -6              |                       
+    Minimum value |  0.005   0.002   0.002
+    Maximum value |  0.006   0.003   0.006
+  -5              |                       
+    Minimum value |  0.004   0.002   0.002
+    Maximum value |  0.004   0.002   0.004
+  -4              |                       
+    Minimum value |  0.003   0.001   0.001
+    Maximum value |  0.003   0.001   0.003
+  Total           |                       
+    Minimum value |  0.003   0.001   0.001
+    Maximum value |  0.006   0.003   0.006
+------------------------------------------
+
+. * Empse: Monte Carlo error < 0.006
+. table gamma studies if rep<0 & _perf=="cover" & tau>0, stat(min s) stat(max s) nformat(%6.1
+> f)
+
+--------------------------------------
+                  |       studies     
+                  |    5    20   Total
+------------------+-------------------
+gamma             |                   
+  -6              |                   
+    Minimum value |  0.4   0.4     0.4
+    Maximum value |  0.6   0.6     0.6
+  -5              |                   
+    Minimum value |  0.5   0.5     0.5
+    Maximum value |  0.7   0.8     0.8
+  -4              |                   
+    Minimum value |  0.7   0.6     0.6
+    Maximum value |  0.9   1.0     1.0
+  Total           |                   
+    Minimum value |  0.4   0.4     0.4
+    Maximum value |  0.9   1.0     1.0
+--------------------------------------
+
+. * Coverage: Monte Carlo error = 0.4 to 1.0%
+. table gamma studies if rep<0 & _perf=="power" & tau>0, stat(min s) stat(max s) nformat(%6.1
+> f)
+
+--------------------------------------
+                  |       studies     
+                  |    5    20   Total
+------------------+-------------------
+gamma             |                   
+  -6              |                   
+    Minimum value |  0.6   0.9     0.6
+    Maximum value |  0.8   1.1     1.1
+  -5              |                   
+    Minimum value |  0.9   0.9     0.9
+    Maximum value |  1.0   1.1     1.1
+  -4              |                   
+    Minimum value |  1.1   0.4     0.4
+    Maximum value |  1.1   0.8     1.1
+  Total           |                   
+    Minimum value |  0.6   0.4     0.4
+    Maximum value |  1.1   1.1     1.1
+--------------------------------------
+
+. * Power: Monte Carlo error <= 1.1%
+. 
+. 
+. // ANALYSE ESTIMATES OF TAU
+. simcombine
+Reading 24 files........................
+Results loaded into current frame simrun_results
+
+. drop error* b1* b2* s1* s2*
+
+. rename tau truetau
+
+. * drop all 2SP ML weighted or uncentred
+. drop tau2SPW tau2SPW_ML tau2SPW_MLc tau2SPU_ML 
+
+. * naming doesn't need to include U and c
+. rename (*2SPU*) (*2SP*)
+
+. rename (*MLc) (*ML)
+
+. siman setup, dgm(aratio gamma studies truetau) rep(rep) est(tau) method(2SN_REML 2SP_ML) tr
+> ue(truetau)
+Warning: siman setup found unwanted variables: nobslow nobsupp px bx beta cens n d
+  singlezeroes doublezeroes sdb sdbw tau1SC tau2SN tau2SP tau2SN_ML
+
+                   SUMMARY OF DATA
+_____________________________________________________
+
+Data-generating mechanism (DGM)
+  DGM variables (# levels):       aratio (2) gamma (3) studies (2) truetau (2) 
+  Total number of DGMs:           24
+
+Targets
+  Variable containing targets:    -
+  Number of targets:              1
+  Target values:                  
+
+Methods
+  Variable containing methods:    method
+  Number of methods:              2
+  Method values:                  2SN_REML; 2SP_ML
+
+Repetition-level output
+  Point estimate variable:        tau
+  SE variable:                    -
+  df variable:                    -
+  Conf. limit variables:          -
+  p-value variable:               -
+  True value variable:            truetau
+
+Estimates data                    in data
+Performance statistics            not in data
+_____________________________________________________
+
+. siman ana, max(100)
+siman analyse has created variable _se to hold the MCSE
+siman analyse has run successfully
+
+. siman tab mean if truetau>0, row(truetau gamma aratio studies)
+
+-----------------------------------------------
+                         |         method      
+                         |  2SN_REML     2SP_ML
+-------------------------+---------------------
+truetau                  |                     
+  .30000001              |                     
+    gamma                |                     
+      -6                 |                     
+        aratio           |                     
+          1              |                     
+            studies      |                     
+              5          |                     
+                Estimate |  .1706666   .1608031
+                MCSE     |  .0063898   .0062139
+              20         |                     
+                Estimate |  .0781462   .2018916
+                MCSE     |  .0032726   .0048666
+          2              |                     
+            studies      |                     
+              5          |                     
+                Estimate |  .1722483   .1767932
+                MCSE     |  .0065982   .0067503
+              20         |                     
+                Estimate |  .0715668    .207438
+                MCSE     |  .0032706   .0050522
+      -5                 |                     
+        aratio           |                     
+          1              |                     
+            studies      |                     
+              5          |                     
+                Estimate |  .2091366   .1563874
+                MCSE     |   .005359   .0046462
+              20         |                     
+                Estimate |  .2035127   .2277473
+                MCSE     |  .0034865   .0034453
+          2              |                     
+            studies      |                     
+              5          |                     
+                Estimate |  .2169093   .1634963
+                MCSE     |  .0056121   .0048347
+              20         |                     
+                Estimate |  .2030167   .2293621
+                MCSE     |  .0035882   .0035696
+      -4                 |                     
+        aratio           |                     
+          1              |                     
+            studies      |                     
+              5          |                     
+                Estimate |  .2340954   .1811556
+                MCSE     |  .0042836   .0038304
+              20         |                     
+                Estimate |  .2724731   .2635552
+                MCSE     |  .0021749     .00214
+          2              |                     
+            studies      |                     
+              5          |                     
+                Estimate |  .2405912    .183097
+                MCSE     |   .004331    .003897
+              20         |                     
+                Estimate |  .2731232   .2629037
+                MCSE     |  .0022168    .002187
+-----------------------------------------------
+
+. siman nes mean if truetau>0, ///
+>         legend(pos(3) col(1)) stagger(.05) ///
+>         $PPT dglabsize(small) lw(*2 = = =) dglwidth(*2) ///
+>         lcol(blue red) lpat(dash dash) name(tauhet,replace)
+siman nestloop will draw 1 graphs (1 targets * 1 performance measures)
+
+. table gamma studies if rep<0 & _perf=="mean" & truetau>0, stat(max _se) stat(min _se) nform
+> at(%6.3f)
+
+------------------------------------------
+                  |         studies       
+                  |      5      20   Total
+------------------+-----------------------
+gamma             |                       
+  -6              |                       
+    Maximum value |  0.007   0.005   0.007
+    Minimum value |  0.006   0.003   0.003
+  -5              |                       
+    Maximum value |  0.006   0.004   0.006
+    Minimum value |  0.005   0.003   0.003
+  -4              |                       
+    Maximum value |  0.004   0.002   0.004
+    Minimum value |  0.004   0.002   0.002
+  Total           |                       
+    Maximum value |  0.007   0.005   0.007
+    Minimum value |  0.004   0.002   0.002
+------------------------------------------
+
+. * Mean: Monte Carlo error < 0.007
+. 
+. /* before using simrecreate,need:
+> recast double px bx beta
+> foreach var of varlist px bx beta {
+>         replace `var' = round(`var',1E-7)
+> }
+> */
+. 
+end of do-file
+      name:  <unnamed>
+       log:  C:\ian\git\TwoStagePoisson\simulation\twoSPsimrun.log
+  log type:  text
+ closed on:  30 Jan 2026, 12:49:39
+---------------------------------------------------------------------------------------------

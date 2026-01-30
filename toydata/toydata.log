@@ -1,0 +1,189 @@
+---------------------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  C:\ian\git\TwoStagePoisson\toydata\toydata.log
+  log type:  text
+ opened on:  30 Jan 2026, 12:15:44
+
+. /*
+> "toydata.do"
+> IW 5/9/2025
+> for github 30/1/2026
+> */
+. 
+. // User-specific settings
+. cd C:\ian\git\TwoStagePoisson\toydata
+C:\ian\git\TwoStagePoisson\toydata
+
+. adopath ++ C:\ian\git\TwoStagePoisson\ado
+  [1]              "C:\ian\git\TwoStagePoisson\ado"
+  [2]  (BASE)      "C:\Program Files\StataNow19\ado\base/"
+  [3]  (SITE)      "C:\Program Files\StataNow19\ado\site/"
+  [4]              "."
+  [5]  (PERSONAL)  "c:\ian\ado\personal/"
+  [6]  (PLUS)      "c:\ian\ado\plus/"
+  [7]  (OLDPLACE)  "c:\ado/"
+
+. set scheme mrc
+
+. 
+. // Compute PLLFs: a bit slow
+. prog drop _all
+
+. use toydata, clear
+
+. forvalues i=1/2 {
+  2.         poisson d z if study==`i', exposure(py) 
+  3.         local b`i'=_b[z]
+  4.         local se`i'=_se[z]
+  5.         pllf, profile(z) range(-3 2) nograph diff norm n(500) ///
+>                 gen(beta`i' pll`i' norm`i'): ///
+>                 poisson d z if study==`i', exposure(py) 
+  6.         label var pll`i' "Study `i', exact PLLF"
+  7.         label var norm`i' "Study `i', normal approx"
+  8.         label var beta`i' "beta: log rate ratio for treatment"
+  9. }
+
+Iteration 0:  Log likelihood = -4.8445563  
+Iteration 1:  Log likelihood = -4.8440232  
+Iteration 2:  Log likelihood = -4.8440232  
+
+Poisson regression                                      Number of obs =      2
+                                                        LR chi2(1)    =  19.27
+                                                        Prob > chi2   = 0.0000
+Log likelihood = -4.8440232                             Pseudo R2     = 0.6655
+
+------------------------------------------------------------------------------
+           d | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+           z |  -1.386294   .3535534    -3.92   0.000    -2.079246   -.6933424
+       _cons |  -3.218876   .1581139   -20.36   0.000    -3.528773   -2.908978
+      ln(py) |          1  (exposure)
+------------------------------------------------------------------------------
+Profiling:...................................................................................
+> ...........................................................................................
+> ...........................................................................................
+> ...........................................................................................
+> ...........................................................................................
+> .....................................................
+
+
+-------------------------------------------------------------
+           d |     Coef.   Std. Err.     [95% PLL Conf. Int.]
+-------------+-----------------------------------------------
+           z | -1.386294    .3575223    -2.135594   -.7341317
+-------------------------------------------------------------
+Note: Std. Err. is pseudo standard error, derived from PLL CI
+
+Iteration 0:  Log likelihood = -5.9349994  
+Iteration 1:  Log likelihood = -5.9349994  
+
+Poisson regression                                     Number of obs =       2
+                                                       LR chi2(1)    =   -0.00
+                                                       Prob > chi2   =  1.0000
+Log likelihood = -5.9349994                            Pseudo R2     = -0.0000
+
+------------------------------------------------------------------------------
+           d | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+           z |          0   .1825742     0.00   1.000    -.3578388    .3578388
+       _cons |  -2.813411   .1290994   -21.79   0.000    -3.066441    -2.56038
+      ln(py) |          1  (exposure)
+------------------------------------------------------------------------------
+Profiling:...................................................................................
+> ...........................................................................................
+> ...........................................................................................
+> ...........................................................................................
+> ...........................................................................................
+> .....................................................
+
+
+-------------------------------------------------------------
+           d |     Coef.   Std. Err.     [95% PLL Conf. Int.]
+-------------+-----------------------------------------------
+           z |         0    .1830475    -.3587611    .3587719
+-------------------------------------------------------------
+Note: Std. Err. is pseudo standard error, derived from PLL CI
+
+. assert beta1==beta2
+
+. drop study z d py beta2
+
+. rename beta1 beta
+
+. save toydata_pllf, replace
+file toydata_pllf.dta saved
+
+. 
+. // Rearrange data
+. use toydata_pllf, clear
+
+. gen pll12=pll1+pll2
+
+. gen norm12=norm1+norm2
+
+. summ pll12
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+       pll12 |        500   -44.73788    32.08666  -113.3799  -6.976346
+
+. replace pll12=pll12-r(max)
+(500 real changes made)
+
+. summ norm12
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+      norm12 |        500   -46.63405    37.37888  -145.4162  -6.069023
+
+. replace norm12=norm12-r(max)
+(500 real changes made)
+
+. 
+. reshape long pll norm, i(beta) j(method)
+(j = 1 2 12)
+
+Data                               Wide   ->   Long
+-----------------------------------------------------------------------------
+Number of observations              500   ->   1,500       
+Number of variables                   7   ->   4           
+j variable (3 values)                     ->   method
+xij variables:
+                        pll1 pll2 pll12   ->   pll
+                     norm1 norm2 norm12   ->   norm
+-----------------------------------------------------------------------------
+
+. label var pll "Exact PLLF"
+
+. label var norm "Normal approx"
+
+. label def method 1 "Study 1" 2 "Study 2" 12 "Pooled"
+
+. label val method method
+
+. 
+. // Draw graph
+. foreach var in pll norm {
+  2.         replace `var'=. if `var'<-15
+  3. }
+(792 real changes made, 792 to missing)
+(768 real changes made, 768 to missing)
+
+. keep if inrange(beta,-3,1)
+(300 observations deleted)
+
+. line pll norm beta, lc(black =) lp(solid dash) lw(*2 =) ytitle(Relative profile log-likelih
+> ood,size(small)) legend(row(1) size(small)) xsize(6) ysize(7) xtitle(,size(small)) ytitle(,
+> size(small)) ylab(,labsize(small)) xlab(,labsize(small)) name(toydataPLL,replace) by(method
+> , note("") col(1) legend(pos(6))) subtitle(,size(small)) xline(-0.355, lcol(gray)) saving(t
+> oydata_pllf,replace)
+(file toydata_pllf.gph not found)
+file toydata_pllf.gph saved
+
+. 
+end of do-file
+      name:  <unnamed>
+       log:  C:\ian\git\TwoStagePoisson\toydata\toydata.log
+  log type:  text
+ closed on:  30 Jan 2026, 12:16:15
+---------------------------------------------------------------------------------------------
