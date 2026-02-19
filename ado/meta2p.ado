@@ -1,5 +1,8 @@
 /*
-*! v0.5 IW 10dec2025
+*! v0.5.1 IW 17feb2026
+	options for Poisson must be included in new poissonoptions()
+	this means getting an option wrong (e.g. random instead of re) gives a clearer error message
+v0.5 IW 10dec2025
 	add centre option: likely to outperform nocentre for REML
 v0.4 IW 25sep2025
 	wt fails with zeroes
@@ -10,7 +13,9 @@ v0.2 IW 10sep2025
 prog def meta2p, rclass
 * run 2-stage Poisson-approx MA (CE and RE)
 * NB b is assumed to be a log HR or log RR for group 1 vs group 2
-syntax varlist(min=2 max=2) [if] [in], d(varlist min=2 max=2) [Study(varname) PYears(varlist min=2 max=2) wt RE CENtre VERBose pause debug list irr eform *]
+syntax varlist(min=2 max=2) [if] [in], d(varlist min=2 max=2) [Study(varname) PYears(varlist min=2 max=2) wt RE CENtre VERBose pause list irr eform POISSONoptions(string) ///
+debug /// undocumented
+]
 local est : word 1 of `varlist'
 local se : word 2 of `varlist'
 local d1 : word 1 of `d'
@@ -74,7 +79,7 @@ if !mi("`centre'") {
 // Fit Poisson model
 local poissoncmd poisson Meta pooled i.`study' `wtexp', exp(`exp')
 if !mi("`re'") local poissoncmd me`poissoncmd' || `study':pooled, nocons
-local poissoncmd `poissoncmd' `options'
+local poissoncmd `poissoncmd' `poissonoptions'
 if !mi("`list'") {
 	di as text "Data for Poisson model:" _c
 	char `exp'[varname] "Pyears"

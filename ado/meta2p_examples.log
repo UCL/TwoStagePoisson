@@ -1,0 +1,81 @@
+----------------------------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  C:\ian\git\TwoStagePoisson\ado\meta2p_examples.log
+  log type:  text
+ opened on:  19 Feb 2026, 12:38:46
+
+. /*
+> meta2p_examples.do
+> Run the examples in the help file
+> */
+. 
+. clear
+
+. input study d1 py1 d0 py0
+
+         study         d1        py1         d0        py0
+  1. 1 40 1000 10 1000
+  2. 2 60 1000 60 1000
+  3. end
+
+. gen est = log(d1/py1) - log(d0/py0)
+
+. gen se = sqrt(1/d1+1/d0)
+
+. metan est se, nograph model(fixed)
+
+Studies included: 2
+Participants included: Unknown
+
+Meta-analysis pooling of aggregate data
+using the common-effect inverse-variance model
+
+--------------------------------------------------------------------
+Study                |   Effect    [95% Conf. Interval]   % Weight
+---------------------+----------------------------------------------
+1                    |     1.386      0.693     2.079      21.05
+2                    |     0.000     -0.358     0.358      78.95
+---------------------+----------------------------------------------
+Overall, IV          |     0.292     -0.026     0.610     100.00
+--------------------------------------------------------------------
+
+Test of overall effect = 0:  z =   1.799  p = 0.072
+
+
+Heterogeneity measures, calculated from the data
+with Conf. Intervals based on non-central chi² (common-effect) distribution for Q
+---------------------------------------------------------
+Measure              |     Value      df      p-value
+---------------------+-----------------------------------
+Cochran's Q          |     12.14        1      0.000
+                     |            -[95% Conf. Interval]-
+H                    |     3.484     1.377     5.297
+I² (%)               |     91.8%     47.3%     96.4%
+---------------------------------------------------------
+H = relative excess in Cochran's Q over its degrees-of-freedom
+I² = proportion of total variation in effect estimate due to between-study heterogeneity (based on Q
+> )
+
+. 
+. /*
+> local b2sn = r(eff)
+> qui mvmeta_make, by(study) clear: poisson d z, exp(py) 
+> mvmeta y S, fixed
+> assert abs(_b[yz]-`b2sn')<1E-7
+> */
+. 
+. meta2p est se, d(d1 d0) 
+Two-stage common-effects meta-analysis by unweighted Poisson approximation:
+------------------------------------------------------------------------------
+        Meta | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+      pooled |   .3566749   .1558387     2.29   0.022     .0512366    .6621133
+------------------------------------------------------------------------------
+
+. 
+end of do-file
+      name:  <unnamed>
+       log:  C:\ian\git\TwoStagePoisson\ado\meta2p_examples.log
+  log type:  text
+ closed on:  19 Feb 2026, 12:38:48
+----------------------------------------------------------------------------------------------------
