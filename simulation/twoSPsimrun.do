@@ -100,14 +100,14 @@ siman nes pctbias cover, ///
 * cover: Monte Carlo error varies from 0.3 to 0.9%
 
 
-// SCATTER PLOT OF DISCREPANCIES FROM 1SC: HOM, CE METHODS
+// SCATTER PLOT OF DIFFERENCES FROM 1SC: HOM, CE METHODS
 simcombine
 drop error* tau1* tau2* s1* s2*
 foreach method in 2SN 2SPU {
 	gen e`method' = b`method' - b1SC
 }
 reshape long e, i(studies aratio gamma tau rep) j(method) string
-label var e "Discrepancy from 1-stage Cox"
+label var e "Difference from 1-stage Cox"
 label var b1SC "1-stage Cox"
 egen emean = mean(e), by(aratio method)
 gen zero=0
@@ -115,7 +115,7 @@ recast double tau
 replace tau = round(tau,.1)
 keep if studies==5 & tau==0
 *scatter e b1SC, mcol(blue) || line emean zero b1SC, lcol(blue black) by(method aratio gamma, legend(off) col(3) note("") t2title(gamma=-6                  gamma=-5                  gamma=-4)) ytitle("      2-stage Poisson                   2-stage Normal" "     aratio=2        aratio=1        aratio=2        aratio=1") subtitle("")
-scatter e b1SC, mcol(blue) || line emean zero b1SC, lcol(blue black) by(method gamma aratio, legend(off) col(6) note("") t2title("gamma=-6                                      gamma=-5                                      gamma=-4" "aratio=1                aratio=2                aratio=1                aratio=2                aratio=1                aratio=2")) ytitle("      2-stage Poisson                   2-stage Normal") xsize(9) ysize(5) subtitle("") name(discrep_ref,replace)
+scatter e b1SC, mcol(blue) || line emean zero b1SC, lcol(blue black) by(method gamma aratio, legend(off) col(6) note("") t2title("gamma=-6                                      gamma=-5                                      gamma=-4" "aratio=1                aratio=2                aratio=1                aratio=2                aratio=1                aratio=2")) ytitle("    log HR, 2-stage Poisson      log HR, 2-stage Normal") xsize(9) ysize(5) subtitle("") name(discrep_ref,replace) xtitle("log HR, 1-stage Cox")
 
 replace method = "2-stage Normal" if method=="2SN"
 replace method = "2-stage Poisson" if method=="2SPU"
