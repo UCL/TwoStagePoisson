@@ -46,7 +46,7 @@ if !inlist(substr("`folder'",-1,1),"/","\") local folder `folder'/
 // END OF PARSING
 
 
-// STORE SETTINGS AS CHAR IS FRAME SIMSETTINGS
+// STORE SETTINGS AS CHAR IN FRAME SETTINGS
 frame `settings' {
 	local allthings name nprogs genprog anaprog inputs outputs folder
 	foreach thing of local allthings {

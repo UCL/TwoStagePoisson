@@ -1,7 +1,18 @@
 /*
-*! v0.3 IW 1oct2025
+*! v0.4 IW 24feb2026
+	input variable formats are copied from settings frame to results frame,
+		and used in recreating file name
+v0.3 IW 1oct2025
 	new simsetup program that stores settings as char
-NB can be run in frame results or in frame settings
+
+simrecreate can be run in two ways:
+	in frame settings
+		simrecreate in 3, rep(907)
+		simrecreate if tau==float(.3) & gamma==-5 & aratio==1 & studies==5, rep(907)
+	in frame results 
+		simrecreate in 2407
+IF RESULTS FILE ARE DOUBLES, IT MAY BE NECESSARY TO FORMAT NON-INTEGERS AS %9.0G
+This is because doubles default to %10.0g which displays rounding errors
 */
 
 prog def simrecreate
@@ -22,6 +33,8 @@ foreach frame in settings results data rngstates {
 
 // END OF PARSING
 
+marksample touse // best before -frame- which erases any r()
+
 qui frame
 local frame = r(currentframe) 
 if "`frame'"=="`results'" {
@@ -38,8 +51,11 @@ else {
 	exit 498
 }
 
-marksample touse
 qui count if `touse'
+if r(N)==0 {
+	di as error "No observations identified"
+	exit 2000
+}
 if r(N)>1 di as error "Multiple rows identified: using first row"
 tempvar id
 gen `id'=_n
@@ -52,7 +68,8 @@ if "`frame'" == "`results'" {
 	local postfilename `name'
 	local args
 	foreach input of local inputs {
-		local inputvalue = `input'[`row']
+		local format : format `input'
+		local inputvalue = string(`input'[`row'],"`format'")
 		local postfilename `postfilename'_`input'`inputvalue'
 		local args `args' `input'(`inputvalue')
 	}

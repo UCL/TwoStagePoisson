@@ -1,7 +1,10 @@
 /* 
 simrun: main program
 	List the simulations requested, and run all that need running
-*! v0.3 IW 1oct2025
+*! v0.4 IW 24feb2026
+	input variable formats are copied from settings frame to results frame,
+		and used in recreating file name
+v0.3 IW 1oct2025
 	new simsetup program that stores settings as char
 v0.2.1 IW 25sep2025
 	_dots not dotter
@@ -19,6 +22,13 @@ Structure of package:
 	Examples:
 		simrun.do - define DG parameters and run simple simulation using mysim.ado
 		mysim.ado - define DG model, estimands and analyses
+Workflow:
+	simsetup - load the programs (not the sim settings)
+		save settings as chars in frame settings
+	simrun - read the simulation settings and perform simulation 
+		(i.e. simulate data and analyse data) if needed
+	simcombine - combine results
+	simrecreate - recreate a data set
 Notes 
 	donereps=. means there is no file, donereps=0 means an empty file
 To do
@@ -126,7 +136,18 @@ forvalues i=1/`=_N' {
 	local prevrepsplus1 = `prevreps'+1
 	di as text _new "Running repetitions " as result `prevrepsplus1' as text " to " as result `reps' as text " of row " as result `i' as text ":"
 	if `prevreps'==0 {
-		frame create `results' double(`inputs') int(rep) `outputs' 
+		* frame create `results' double(`inputs') int(rep) `outputs' 
+		* above loses input variable formats
+		frame copy `settings' `results'
+		frame `results' {
+			qui drop in 1/l
+			keep `inputs'
+			order `inputs'
+			gen int rep = .
+			foreach var in `outputs' {
+				gen float `var' = .
+			}
+		}
 		* non-integer inputs as double ensures values match in simrecreate
 		frame create `rngstates' int(rep) str2000(rngstate1 rngstate2 rngstate3) 
 		cap confirm var seed
