@@ -1,8 +1,8 @@
-----------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------
       name:  <unnamed>
        log:  C:\ian\git\TwoStagePoisson\simulation\choose1S_RE.log
   log type:  text
- opened on:  25 Feb 2026, 09:26:10
+ opened on:  25 Feb 2026, 19:32:54
 
 . /*
 > Choose a 1-stage RE analysis
@@ -21,7 +21,8 @@
 
 . /*
 > twoSPsimrun.do
-> Simulation study to evaluate two-stage Poisson (2SP) method for meta-analysis of TTE data
+> Simulation study to evaluate two-stage Poisson (2SP) method for meta-analysis of TT
+> E data
 > Main program
 > 2000 reps of 5 studies takes ~0.5-1hs; of 20 studies, 2-3h
 > IW Sep 2025
@@ -37,13 +38,12 @@ C:\ian\git\TwoStagePoisson\simulation
 
 . adopath ++ C:\ian\git\TwoStagePoisson\ado
   [1]              "C:\ian\git\TwoStagePoisson\ado"
-  [2]              "c:\ian\git\simrun"
-  [3]  (BASE)      "C:\Program Files\StataNow19\ado\base/"
-  [4]  (SITE)      "C:\Program Files\StataNow19\ado\site/"
-  [5]              "."
-  [6]  (PERSONAL)  "c:\ian\ado\personal/"
-  [7]  (PLUS)      "c:\ian\ado\plus/"
-  [8]  (OLDPLACE)  "c:\ado/"
+  [2]  (BASE)      "C:\Program Files\StataNow19\ado\base/"
+  [3]  (SITE)      "C:\Program Files\StataNow19\ado\site/"
+  [4]              "."
+  [5]  (PERSONAL)  "c:\ian\ado\personal/"
+  [6]  (PLUS)      "c:\ian\ado\plus/"
+  [7]  (OLDPLACE)  "c:\ado/"
 
 . set scheme mrc
 
@@ -86,14 +86,16 @@ C:\ian\git\TwoStagePoisson\simulation
 
 . gen seed = 42
 
-. gsort studies -tau gamma aratio // start with k=5 (faster), and tau=0.3 (more problematic)
+. gsort studies -tau gamma aratio // start with k=5 (faster), and tau=0.3 (more probl
+> ematic)
 
 . 
 . * load the simulation program
 . do twoSPsimprog
 
 . /*
-> Simulation study to evaluate two-stage Poisson (2SP) method for meta-analysis of TTE data
+> Simulation study to evaluate two-stage Poisson (2SP) method for meta-analysis of TT
+> E data
 > Simulation definition program (see twoSPsimrun for the main program)
 > IW 10sep2025
 > v0.2 IW 17sep2025
@@ -116,8 +118,8 @@ C:\ian\git\TwoStagePoisson\simulation
   6. 
 . // GENERATE THE DATA
 . version 14
-  7. syntax, studies(int) nobslow(int) nobsupp(int) px(real) aratio(real) gamma(real) bx(real) beta(real) 
-> tau(real) cens(real)
+  7. syntax, studies(int) nobslow(int) nobsupp(int) px(real) aratio(real) gamma(real)
+>  bx(real) beta(real) tau(real) cens(real)
   8. assert `studies'>1
   9. assert inrange(`px',0,1)
  10. assert `aratio'>0
@@ -169,7 +171,8 @@ C:\ian\git\TwoStagePoisson\simulation
 . * descriptive outputs
 . local outputs n d singlezeroes doublezeroes sdb sdbw
   2. * analysis outputs
-. foreach method in 1SC 2SN 2SPU 2SPW 2SN_REML 2SN_ML 2SPU_ML 2SPW_ML 2SPU_MLc 2SPW_MLc {
+. foreach method in 1SC 2SN 2SPU 2SPW 2SN_REML 2SN_ML 2SPU_ML 2SPW_ML 2SPU_MLc 2SPW_M
+> Lc {
   3.         local outputs `outputs' b`method' s`method' tau`method' error`method' 
   4. }
   5. if "`0'"=="?" {
@@ -346,38 +349,197 @@ end of do-file
 . simrun, append
 Current state of simulation:
 
-     +----------------------------------------------------------------------------------------------+
-     | studies   nobslow   nobsupp   px   aratio   gamma   bx   beta   tau   cens   reps   donereps |
-     |----------------------------------------------------------------------------------------------|
-  1. |       5       300      1000   .4        1      -6   .4    -.3    .3      5   2000       2000 |
-  2. |       5       300      1000   .4        2      -6   .4    -.3    .3      5   2000       2000 |
-  3. |       5       300      1000   .4        1      -5   .4    -.3    .3      5   2000       2000 |
-  4. |       5       300      1000   .4        2      -5   .4    -.3    .3      5   2000       2000 |
-  5. |       5       300      1000   .4        1      -4   .4    -.3    .3      5   2000       2000 |
-     |----------------------------------------------------------------------------------------------|
-  6. |       5       300      1000   .4        2      -4   .4    -.3    .3      5   2000       2000 |
-  7. |       5       300      1000   .4        1      -6   .4    -.3     0      5   2000       2000 |
-  8. |       5       300      1000   .4        2      -6   .4    -.3     0      5   2000       2000 |
-  9. |       5       300      1000   .4        1      -5   .4    -.3     0      5   2000       2000 |
- 10. |       5       300      1000   .4        2      -5   .4    -.3     0      5   2000       2000 |
-     |----------------------------------------------------------------------------------------------|
- 11. |       5       300      1000   .4        1      -4   .4    -.3     0      5   2000       2000 |
- 12. |       5       300      1000   .4        2      -4   .4    -.3     0      5   2000       2000 |
- 13. |      20       300      1000   .4        1      -6   .4    -.3    .3      5   2000       2000 |
- 14. |      20       300      1000   .4        2      -6   .4    -.3    .3      5   2000       2000 |
- 15. |      20       300      1000   .4        1      -5   .4    -.3    .3      5   2000       2000 |
-     |----------------------------------------------------------------------------------------------|
- 16. |      20       300      1000   .4        2      -5   .4    -.3    .3      5   2000       2000 |
- 17. |      20       300      1000   .4        1      -4   .4    -.3    .3      5   2000       2000 |
- 18. |      20       300      1000   .4        2      -4   .4    -.3    .3      5   2000       2000 |
- 19. |      20       300      1000   .4        1      -6   .4    -.3     0      5   2000       2000 |
- 20. |      20       300      1000   .4        2      -6   .4    -.3     0      5   2000       2000 |
-     |----------------------------------------------------------------------------------------------|
- 21. |      20       300      1000   .4        1      -5   .4    -.3     0      5   2000       2000 |
- 22. |      20       300      1000   .4        2      -5   .4    -.3     0      5   2000       2000 |
- 23. |      20       300      1000   .4        1      -4   .4    -.3     0      5   2000       2000 |
- 24. |      20       300      1000   .4        2      -4   .4    -.3     0      5   2000       2000 |
-     +----------------------------------------------------------------------------------------------+
+     +----------------------------------------------------------------------------+
+  1. | studies | nobslow | nobsupp | px | aratio | gamma | bx | beta | tau | cens |
+     |       5 |     300 |    1000 | .4 |      1 |    -6 | .4 |  -.3 |  .3 |    5 |
+     |----------------------------------------------------------------------------|
+     |               reps                |                donereps                |
+     |               2000                |                    2000                |
+     +----------------------------------------------------------------------------+
+
+     +----------------------------------------------------------------------------+
+  2. | studies | nobslow | nobsupp | px | aratio | gamma | bx | beta | tau | cens |
+     |       5 |     300 |    1000 | .4 |      2 |    -6 | .4 |  -.3 |  .3 |    5 |
+     |----------------------------------------------------------------------------|
+     |               reps                |                donereps                |
+     |               2000                |                    2000                |
+     +----------------------------------------------------------------------------+
+
+     +----------------------------------------------------------------------------+
+  3. | studies | nobslow | nobsupp | px | aratio | gamma | bx | beta | tau | cens |
+     |       5 |     300 |    1000 | .4 |      1 |    -5 | .4 |  -.3 |  .3 |    5 |
+     |----------------------------------------------------------------------------|
+     |               reps                |                donereps                |
+     |               2000                |                    2000                |
+     +----------------------------------------------------------------------------+
+
+     +----------------------------------------------------------------------------+
+  4. | studies | nobslow | nobsupp | px | aratio | gamma | bx | beta | tau | cens |
+     |       5 |     300 |    1000 | .4 |      2 |    -5 | .4 |  -.3 |  .3 |    5 |
+     |----------------------------------------------------------------------------|
+     |               reps                |                donereps                |
+     |               2000                |                    2000                |
+     +----------------------------------------------------------------------------+
+
+     +----------------------------------------------------------------------------+
+  5. | studies | nobslow | nobsupp | px | aratio | gamma | bx | beta | tau | cens |
+     |       5 |     300 |    1000 | .4 |      1 |    -4 | .4 |  -.3 |  .3 |    5 |
+     |----------------------------------------------------------------------------|
+     |               reps                |                donereps                |
+     |               2000                |                    2000                |
+     +----------------------------------------------------------------------------+
+
+     +----------------------------------------------------------------------------+
+  6. | studies | nobslow | nobsupp | px | aratio | gamma | bx | beta | tau | cens |
+     |       5 |     300 |    1000 | .4 |      2 |    -4 | .4 |  -.3 |  .3 |    5 |
+     |----------------------------------------------------------------------------|
+     |               reps                |                donereps                |
+     |               2000                |                    2000                |
+     +----------------------------------------------------------------------------+
+
+     +----------------------------------------------------------------------------+
+  7. | studies | nobslow | nobsupp | px | aratio | gamma | bx | beta | tau | cens |
+     |       5 |     300 |    1000 | .4 |      1 |    -6 | .4 |  -.3 |   0 |    5 |
+     |----------------------------------------------------------------------------|
+     |               reps                |                donereps                |
+     |               2000                |                    2000                |
+     +----------------------------------------------------------------------------+
+
+     +----------------------------------------------------------------------------+
+  8. | studies | nobslow | nobsupp | px | aratio | gamma | bx | beta | tau | cens |
+     |       5 |     300 |    1000 | .4 |      2 |    -6 | .4 |  -.3 |   0 |    5 |
+     |----------------------------------------------------------------------------|
+     |               reps                |                donereps                |
+     |               2000                |                    2000                |
+     +----------------------------------------------------------------------------+
+
+     +----------------------------------------------------------------------------+
+  9. | studies | nobslow | nobsupp | px | aratio | gamma | bx | beta | tau | cens |
+     |       5 |     300 |    1000 | .4 |      1 |    -5 | .4 |  -.3 |   0 |    5 |
+     |----------------------------------------------------------------------------|
+     |               reps                |                donereps                |
+     |               2000                |                    2000                |
+     +----------------------------------------------------------------------------+
+
+     +----------------------------------------------------------------------------+
+ 10. | studies | nobslow | nobsupp | px | aratio | gamma | bx | beta | tau | cens |
+     |       5 |     300 |    1000 | .4 |      2 |    -5 | .4 |  -.3 |   0 |    5 |
+     |----------------------------------------------------------------------------|
+     |               reps                |                donereps                |
+     |               2000                |                    2000                |
+     +----------------------------------------------------------------------------+
+
+     +----------------------------------------------------------------------------+
+ 11. | studies | nobslow | nobsupp | px | aratio | gamma | bx | beta | tau | cens |
+     |       5 |     300 |    1000 | .4 |      1 |    -4 | .4 |  -.3 |   0 |    5 |
+     |----------------------------------------------------------------------------|
+     |               reps                |                donereps                |
+     |               2000                |                    2000                |
+     +----------------------------------------------------------------------------+
+
+     +----------------------------------------------------------------------------+
+ 12. | studies | nobslow | nobsupp | px | aratio | gamma | bx | beta | tau | cens |
+     |       5 |     300 |    1000 | .4 |      2 |    -4 | .4 |  -.3 |   0 |    5 |
+     |----------------------------------------------------------------------------|
+     |               reps                |                donereps                |
+     |               2000                |                    2000                |
+     +----------------------------------------------------------------------------+
+
+     +----------------------------------------------------------------------------+
+ 13. | studies | nobslow | nobsupp | px | aratio | gamma | bx | beta | tau | cens |
+     |      20 |     300 |    1000 | .4 |      1 |    -6 | .4 |  -.3 |  .3 |    5 |
+     |----------------------------------------------------------------------------|
+     |               reps                |                donereps                |
+     |               2000                |                    2000                |
+     +----------------------------------------------------------------------------+
+
+     +----------------------------------------------------------------------------+
+ 14. | studies | nobslow | nobsupp | px | aratio | gamma | bx | beta | tau | cens |
+     |      20 |     300 |    1000 | .4 |      2 |    -6 | .4 |  -.3 |  .3 |    5 |
+     |----------------------------------------------------------------------------|
+     |               reps                |                donereps                |
+     |               2000                |                    2000                |
+     +----------------------------------------------------------------------------+
+
+     +----------------------------------------------------------------------------+
+ 15. | studies | nobslow | nobsupp | px | aratio | gamma | bx | beta | tau | cens |
+     |      20 |     300 |    1000 | .4 |      1 |    -5 | .4 |  -.3 |  .3 |    5 |
+     |----------------------------------------------------------------------------|
+     |               reps                |                donereps                |
+     |               2000                |                    2000                |
+     +----------------------------------------------------------------------------+
+
+     +----------------------------------------------------------------------------+
+ 16. | studies | nobslow | nobsupp | px | aratio | gamma | bx | beta | tau | cens |
+     |      20 |     300 |    1000 | .4 |      2 |    -5 | .4 |  -.3 |  .3 |    5 |
+     |----------------------------------------------------------------------------|
+     |               reps                |                donereps                |
+     |               2000                |                    2000                |
+     +----------------------------------------------------------------------------+
+
+     +----------------------------------------------------------------------------+
+ 17. | studies | nobslow | nobsupp | px | aratio | gamma | bx | beta | tau | cens |
+     |      20 |     300 |    1000 | .4 |      1 |    -4 | .4 |  -.3 |  .3 |    5 |
+     |----------------------------------------------------------------------------|
+     |               reps                |                donereps                |
+     |               2000                |                    2000                |
+     +----------------------------------------------------------------------------+
+
+     +----------------------------------------------------------------------------+
+ 18. | studies | nobslow | nobsupp | px | aratio | gamma | bx | beta | tau | cens |
+     |      20 |     300 |    1000 | .4 |      2 |    -4 | .4 |  -.3 |  .3 |    5 |
+     |----------------------------------------------------------------------------|
+     |               reps                |                donereps                |
+     |               2000                |                    2000                |
+     +----------------------------------------------------------------------------+
+
+     +----------------------------------------------------------------------------+
+ 19. | studies | nobslow | nobsupp | px | aratio | gamma | bx | beta | tau | cens |
+     |      20 |     300 |    1000 | .4 |      1 |    -6 | .4 |  -.3 |   0 |    5 |
+     |----------------------------------------------------------------------------|
+     |               reps                |                donereps                |
+     |               2000                |                    2000                |
+     +----------------------------------------------------------------------------+
+
+     +----------------------------------------------------------------------------+
+ 20. | studies | nobslow | nobsupp | px | aratio | gamma | bx | beta | tau | cens |
+     |      20 |     300 |    1000 | .4 |      2 |    -6 | .4 |  -.3 |   0 |    5 |
+     |----------------------------------------------------------------------------|
+     |               reps                |                donereps                |
+     |               2000                |                    2000                |
+     +----------------------------------------------------------------------------+
+
+     +----------------------------------------------------------------------------+
+ 21. | studies | nobslow | nobsupp | px | aratio | gamma | bx | beta | tau | cens |
+     |      20 |     300 |    1000 | .4 |      1 |    -5 | .4 |  -.3 |   0 |    5 |
+     |----------------------------------------------------------------------------|
+     |               reps                |                donereps                |
+     |               2000                |                    2000                |
+     +----------------------------------------------------------------------------+
+
+     +----------------------------------------------------------------------------+
+ 22. | studies | nobslow | nobsupp | px | aratio | gamma | bx | beta | tau | cens |
+     |      20 |     300 |    1000 | .4 |      2 |    -5 | .4 |  -.3 |   0 |    5 |
+     |----------------------------------------------------------------------------|
+     |               reps                |                donereps                |
+     |               2000                |                    2000                |
+     +----------------------------------------------------------------------------+
+
+     +----------------------------------------------------------------------------+
+ 23. | studies | nobslow | nobsupp | px | aratio | gamma | bx | beta | tau | cens |
+     |      20 |     300 |    1000 | .4 |      1 |    -4 | .4 |  -.3 |   0 |    5 |
+     |----------------------------------------------------------------------------|
+     |               reps                |                donereps                |
+     |               2000                |                    2000                |
+     +----------------------------------------------------------------------------+
+
+     +----------------------------------------------------------------------------+
+ 24. | studies | nobslow | nobsupp | px | aratio | gamma | bx | beta | tau | cens |
+     |      20 |     300 |    1000 | .4 |      2 |    -4 | .4 |  -.3 |   0 |    5 |
+     |----------------------------------------------------------------------------|
+     |               reps                |                donereps                |
+     |               2000                |                    2000                |
+     +----------------------------------------------------------------------------+
 Nothing to do
 
 . timer list
@@ -403,14 +565,14 @@ tau:  24000 values changed
 
 . de
 
-Contains data from simrun_results/twoSPsimprog_studies5_nobslow300_nobsupp1000_px.4_aratio1_gamma-6_bx.4_b
-> eta-.3_tau.3_cens5.dta
+Contains data from simrun_results/twoSPsimprog_studies5_nobslow300_nobsupp1000_px.4_a
+> ratio1_gamma-6_bx.4_beta-.3_tau.3_cens5.dta
  Observations:        48,000                  
     Variables:            57                  12 Dec 2025 19:38
-----------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------
 Variable      Storage   Display    Value
     name         type    format    label      Variable label
-----------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------
 studies         int     %10.0g                
 nobslow         int     %10.0g                
 nobsupp         int     %10.0g                
@@ -468,14 +630,14 @@ b2SPW_MLc       float   %9.0g
 s2SPW_MLc       float   %9.0g                 
 tau2SPW_MLc     float   %9.0g                 
 error2SPW_MLc   float   %9.0g                 
-----------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------
 Sorted by: studies  nobslow  nobsupp  px  aratio  gamma  bx  beta  tau  cens
      Note: Dataset has changed since last saved.
 
 . 
 . // let's look at these reps
-. l rep b1SC s1SC b2SN_REML s2SN_REML tau2SN_REML if studies==20 & tau==float(.3) & gamma==-4 & aratio==1 
-> & rep<=5
+. l rep b1SC s1SC b2SN_REML s2SN_REML tau2SN_REML if studies==20 & tau==float(.3) & g
+> amma==-4 & aratio==1 & rep<=5
 
        +--------------------------------------------------------------+
        | rep        b1SC       s1SC   b2SN_REML   s2SN_R~L   tau2~EML |
@@ -1332,10 +1494,176 @@ LR test vs. Weibull model: chibar2(01) = 19.32        Prob >= chibar2 = 0.0000
 . di _b[z], _se[z], sqrt(_b[/var(z[study])])
 -.09274692 .10232413 .35789871
 
+. * weibull and centred treatment
+. summ z, meanonly
+
+. gen cz = z - r(mean)
+
+. mestreg cz x i.study || study: cz, nocons dist(weib) nohr
+
+        Failure _d: d
+  Analysis time _t: t
+
+Fitting fixed-effects model:
+
+Iteration 0:  Log likelihood = -281845.35  
+Iteration 1:  Log likelihood = -5889.4768  
+Iteration 2:  Log likelihood = -5517.9361  
+Iteration 3:  Log likelihood = -5513.7429  
+Iteration 4:  Log likelihood = -5513.7289  
+Iteration 5:  Log likelihood = -5513.7289  
+
+Refining starting values:
+
+Grid node 0:  Log likelihood =  -5508.044
+
+Fitting full model:
+
+Iteration 0:  Log likelihood =  -5508.044  (not concave)
+Iteration 1:  Log likelihood = -5501.1498  
+Iteration 2:  Log likelihood = -5499.7349  
+Iteration 3:  Log likelihood = -5499.5649  
+Iteration 4:  Log likelihood = -5499.5612  
+Iteration 5:  Log likelihood = -5499.5612  
+
+Mixed-effects Weibull PH regression             Number of obs     =     12,239
+Group variable: study                           Number of groups  =         20
+
+                                                Obs per group:
+                                                              min =        312
+                                                              avg =      612.0
+                                                              max =        954
+
+Integration method: mvaghermite                 Integration pts.  =          7
+
+                                                Wald chi2(21)     =     100.82
+Log likelihood = -5499.5612                     Prob > chi2       =     0.0000
+------------------------------------------------------------------------------
+          _t | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+          cz |   -.075682   .1114061    -0.68   0.497     -.294034      .14267
+           x |   .3926819   .0598236     6.56   0.000     .2754298     .509934
+             |
+       study |
+          2  |   .3345202   .2044648     1.64   0.102    -.0662233    .7352638
+          3  |   .7551721   .1878021     4.02   0.000     .3870868    1.123257
+          4  |    .489392   .1668618     2.93   0.003     .1623488    .8164352
+          5  |   .0241101   .1965166     0.12   0.902    -.3610554    .4092756
+          6  |   .3257654   .1888759     1.72   0.085    -.0444245    .6959553
+          7  |   .3593811   .1792375     2.01   0.045     .0080821      .71068
+          8  |   .4711754   .2170551     2.17   0.030     .0457553    .8965956
+          9  |   .2381409   .1769617     1.35   0.178    -.1086976    .5849794
+         10  |   .5712739   .1611979     3.54   0.000     .2553318    .8872159
+         11  |   .3195817   .1772245     1.80   0.071    -.0277719    .6669353
+         12  |   .1329094   .2356156     0.56   0.573    -.3288887    .5947075
+         13  |   .7965649   .1907703     4.18   0.000      .422662    1.170468
+         14  |   .0992161   .2170496     0.46   0.648    -.3261934    .5246255
+         15  |   .2491292   .1816267     1.37   0.170    -.1068526     .605111
+         16  |  -.1018497   .2422072    -0.42   0.674    -.5765671    .3728677
+         17  |    .077885   .2192335     0.36   0.722    -.3518049    .5075748
+         18  |   .3028135   .2129786     1.42   0.155    -.1146169    .7202438
+         19  |   .1653085   .1790812     0.92   0.356    -.1856842    .5163011
+         20  |   .5815763   .1675863     3.47   0.001     .2531133    .9100393
+             |
+       _cons |  -4.471355   .1406263   -31.80   0.000    -4.746977   -4.195732
+-------------+----------------------------------------------------------------
+       /ln_p |  -.0008084   .0294361                      -.058502    .0568852
+-------------+----------------------------------------------------------------
+study        |
+      var(cz)|   .1661636   .0743576                      .0691236    .3994344
+------------------------------------------------------------------------------
+LR test vs. Weibull model: chibar2(01) = 28.34        Prob >= chibar2 = 0.0000
+
+. di _b[cz], _se[cz], sqrt(_b[/var(cz[study])])
+-.07568199 .11140615 .40763167
+
+. * centring other variables has no effect
+. summ x, meanonly
+
+. gen cx = x - r(mean)
+
+. mestreg cz cx i.study || study: cz, nocons dist(weib) nohr
+
+        Failure _d: d
+  Analysis time _t: t
+
+Fitting fixed-effects model:
+
+Iteration 0:  Log likelihood = -281845.35  
+Iteration 1:  Log likelihood = -5889.4768  
+Iteration 2:  Log likelihood = -5517.9361  
+Iteration 3:  Log likelihood = -5513.7429  
+Iteration 4:  Log likelihood = -5513.7289  
+Iteration 5:  Log likelihood = -5513.7289  
+
+Refining starting values:
+
+Grid node 0:  Log likelihood =  -5508.044
+
+Fitting full model:
+
+Iteration 0:  Log likelihood =  -5508.044  (not concave)
+Iteration 1:  Log likelihood = -5501.1443  
+Iteration 2:  Log likelihood = -5499.7338  
+Iteration 3:  Log likelihood =  -5499.565  
+Iteration 4:  Log likelihood = -5499.5612  
+Iteration 5:  Log likelihood = -5499.5612  
+
+Mixed-effects Weibull PH regression             Number of obs     =     12,239
+Group variable: study                           Number of groups  =         20
+
+                                                Obs per group:
+                                                              min =        312
+                                                              avg =      612.0
+                                                              max =        954
+
+Integration method: mvaghermite                 Integration pts.  =          7
+
+                                                Wald chi2(21)     =     100.82
+Log likelihood = -5499.5612                     Prob > chi2       =     0.0000
+------------------------------------------------------------------------------
+          _t | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+          cz |   -.075682   .1114061    -0.68   0.497     -.294034      .14267
+          cx |   .3926819   .0598236     6.56   0.000     .2754298     .509934
+             |
+       study |
+          2  |   .3345202   .2044648     1.64   0.102    -.0662233    .7352638
+          3  |   .7551721   .1878021     4.02   0.000     .3870868    1.123257
+          4  |    .489392   .1668618     2.93   0.003     .1623488    .8164352
+          5  |   .0241101   .1965166     0.12   0.902    -.3610554    .4092756
+          6  |   .3257654   .1888759     1.72   0.085    -.0444245    .6959553
+          7  |   .3593811   .1792375     2.01   0.045     .0080821      .71068
+          8  |   .4711754   .2170551     2.17   0.030     .0457553    .8965956
+          9  |   .2381409   .1769617     1.35   0.178    -.1086976    .5849794
+         10  |   .5712739   .1611979     3.54   0.000     .2553318    .8872159
+         11  |   .3195817   .1772245     1.80   0.071    -.0277719    .6669353
+         12  |   .1329094   .2356156     0.56   0.573    -.3288887    .5947075
+         13  |   .7965649   .1907703     4.18   0.000      .422662    1.170468
+         14  |   .0992161   .2170496     0.46   0.648    -.3261934    .5246255
+         15  |   .2491292   .1816267     1.37   0.170    -.1068526     .605111
+         16  |  -.1018497   .2422072    -0.42   0.674    -.5765671    .3728677
+         17  |    .077885   .2192335     0.36   0.722    -.3518049    .5075748
+         18  |   .3028135   .2129786     1.42   0.155    -.1146169    .7202438
+         19  |   .1653085   .1790812     0.92   0.356    -.1856842    .5163011
+         20  |   .5815763   .1675863     3.47   0.001     .2531133    .9100393
+             |
+       _cons |  -4.315585    .137539   -31.38   0.000    -4.585156   -4.046013
+-------------+----------------------------------------------------------------
+       /ln_p |  -.0008084   .0294361                      -.058502    .0568852
+-------------+----------------------------------------------------------------
+study        |
+      var(cz)|   .1661636   .0743576                      .0691236    .3994344
+------------------------------------------------------------------------------
+LR test vs. Weibull model: chibar2(01) = 28.34        Prob >= chibar2 = 0.0000
+
+. di _b[cz], _se[cz], sqrt(_b[/var(cz[study])])
+-.07568199 .11140615 .40763167
+
 . 
 . // merlin: why it's not OK
 . * CE, ignore study
-. stmerlin z x, dist(rp) df(3)
+. stmerlin cz x, dist(rp) df(3)
 Obtaining initial values
 variables created: _rcs1_1 to _rcs1_3
 
@@ -1352,9 +1680,9 @@ Log likelihood = -5540.4305
              | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
 _t:          |            
-           z |  -.0978924   .0597348    -1.64   0.101    -.2149705    .0191856
+          cz |  -.0978924   .0597348    -1.64   0.101    -.2149704    .0191856
            x |   .3841462   .0596774     6.44   0.000     .2671807    .5011117
-       _cons |  -2.555135   .0504258   -50.67   0.000    -2.653968   -2.456303
+       _cons |  -2.603886   .0417112   -62.43   0.000    -2.685638   -2.522133
 ------------------------------------------------------------------------------
     Warning: Baseline spline coefficients not shown - use ml display
 
@@ -1369,26 +1697,26 @@ _t:          |
 . * stmerlin z x `Istudyvars' z#M1[study]@1, dist(rp) df(3)
 . 
 . * CE weibull
-. merlin (t z x `Istudyvars', family(weibull, failure(d)))
+. merlin (t cz x `Istudyvars', family(weibull, failure(d)))
 
 Fitting full model:
 
 Iteration 0:  Log likelihood = -58364.092  (not concave)
-Iteration 1:  Log likelihood =  -6375.202  (not concave)
-Iteration 2:  Log likelihood = -5610.3734  (not concave)
-Iteration 3:  Log likelihood = -5545.7297  (not concave)
-Iteration 4:  Log likelihood = -5528.0432  (not concave)
-Iteration 5:  Log likelihood = -5518.6548  (not concave)
-Iteration 6:  Log likelihood = -5515.9697  (not concave)
-Iteration 7:  Log likelihood = -5514.2762  (not concave)
-Iteration 8:  Log likelihood = -5513.9803  (not concave)
-Iteration 9:  Log likelihood = -5513.8471  (not concave)
-Iteration 10: Log likelihood = -5513.7778  (not concave)
-Iteration 11: Log likelihood = -5513.7514  (not concave)
-Iteration 12: Log likelihood = -5513.7392  (not concave)
-Iteration 13: Log likelihood = -5513.7315  (not concave)
-Iteration 14: Log likelihood = -5513.7291  (not concave)
-Iteration 15: Log likelihood =  -5513.729  (not concave)
+Iteration 1:  Log likelihood = -6361.5752  (not concave)
+Iteration 2:  Log likelihood = -5577.2024  (not concave)
+Iteration 3:  Log likelihood = -5529.3388  (not concave)
+Iteration 4:  Log likelihood = -5518.5376  (not concave)
+Iteration 5:  Log likelihood = -5514.0501  (not concave)
+Iteration 6:  Log likelihood = -5513.7877  (not concave)
+Iteration 7:  Log likelihood = -5513.7545  (not concave)
+Iteration 8:  Log likelihood =  -5513.738  (not concave)
+Iteration 9:  Log likelihood = -5513.7333  (not concave)
+Iteration 10: Log likelihood = -5513.7306  (not concave)
+Iteration 11: Log likelihood = -5513.7296  (not concave)
+Iteration 12: Log likelihood = -5513.7292  (not concave)
+Iteration 13: Log likelihood =  -5513.729  (not concave)
+Iteration 14: Log likelihood = -5513.7289  (not concave)
+Iteration 15: Log likelihood = -5513.7289  (not concave)
 Iteration 16: Log likelihood = -5513.7289  (not concave)
 Iteration 17: Log likelihood = -5513.7289  (not concave)
 Iteration 18: Log likelihood = -5513.7289  (not concave)
@@ -1682,50 +2010,50 @@ Log likelihood = -5513.7289
              | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
 t:           |            
-           z |  -.0962323   .0597633    -1.61   0.107    -.2133663    .0209017
+          cz |  -.0962323   .0597633    -1.61   0.107    -.2133663    .0209017
            x |    .382697   .0597236     6.41   0.000      .265641    .4997531
-     Istudy1 |   -2.30992    .231067   -10.00   0.000    -2.762803   -1.857037
-     Istudy2 |  -2.036738   .2519195    -8.08   0.000    -2.530491   -1.542985
-     Istudy3 |  -1.619444   .2387206    -6.78   0.000    -2.087328   -1.151561
-     Istudy4 |  -1.838522   .2210886    -8.32   0.000    -2.271847   -1.405196
-     Istudy5 |  -2.287992   .2426458    -9.43   0.000    -2.763569   -1.812415
-     Istudy6 |  -2.044445   .2394474    -8.54   0.000    -2.513754   -1.575137
-     Istudy7 |  -2.013155   .2320574    -8.68   0.000    -2.467979    -1.55833
-     Istudy8 |  -1.897524   .2622676    -7.24   0.000    -2.411559   -1.383489
-     Istudy9 |  -2.127943   .2301196    -9.25   0.000    -2.578969   -1.676917
-    Istudy10 |  -1.771163   .2177117    -8.14   0.000     -2.19787   -1.344456
-    Istudy11 |  -2.040233   .2301259    -8.87   0.000    -2.491271   -1.589194
-    Istudy12 |  -2.229774          .        .       .            .           .
-    Istudy13 |  -1.578197   .2409893    -6.55   0.000    -2.050527   -1.105866
-    Istudy14 |  -2.269645   .2622459    -8.65   0.000    -2.783638   -1.755653
-    Istudy15 |  -2.117017   .2336532    -9.06   0.000    -2.574969   -1.659065
-    Istudy16 |  -2.471613   .2830797    -8.73   0.000    -3.026439   -1.916787
-    Istudy17 |  -2.291394    .264041    -8.68   0.000    -2.808905   -1.773883
-    Istudy18 |  -2.073119   .2589326    -8.01   0.000    -2.580617    -1.56562
-    Istudy19 |  -2.198908   .2315553    -9.50   0.000    -2.652748   -1.745068
-    Istudy20 |  -1.791282   .2232402    -8.02   0.000    -2.228825    -1.35374
-       _cons |  -2.038825   .2054976    -9.92   0.000    -2.441593   -1.636058
+     Istudy1 |  -2.333613    .231067   -10.10   0.000    -2.786496    -1.88073
+     Istudy2 |  -2.060431   .2519195    -8.18   0.000    -2.554184   -1.566677
+     Istudy3 |  -1.643137   .2387206    -6.88   0.000    -2.111021   -1.175253
+     Istudy4 |  -1.862214   .2210886    -8.42   0.000     -2.29554   -1.428889
+     Istudy5 |  -2.311685   .2426458    -9.53   0.000    -2.787262   -1.836108
+     Istudy6 |  -2.068138   .2394474    -8.64   0.000    -2.537446    -1.59883
+     Istudy7 |  -2.036847   .2320574    -8.78   0.000    -2.491671   -1.582023
+     Istudy8 |  -1.921217   .2622676    -7.33   0.000    -2.435252   -1.407182
+     Istudy9 |  -2.151635   .2301196    -9.35   0.000    -2.602661   -1.700609
+    Istudy10 |  -1.794855   .2177117    -8.24   0.000    -2.221563   -1.368148
+    Istudy11 |  -2.063925   .2301259    -8.97   0.000    -2.514964   -1.612887
+    Istudy12 |  -2.253467          .        .       .            .           .
+    Istudy13 |  -1.601889   .2409893    -6.65   0.000     -2.07422   -1.129559
+    Istudy14 |  -2.293338   .2622459    -8.74   0.000    -2.807331   -1.779345
+    Istudy15 |   -2.14071   .2336532    -9.16   0.000    -2.598662   -1.682758
+    Istudy16 |  -2.495306   .2830797    -8.81   0.000    -3.050132   -1.940479
+    Istudy17 |  -2.315087    .264041    -8.77   0.000    -2.832598   -1.797576
+    Istudy18 |  -2.096811   .2589326    -8.10   0.000     -2.60431   -1.589313
+    Istudy19 |    -2.2226   .2315553    -9.60   0.000    -2.676441    -1.76876
+    Istudy20 |  -1.814975   .2232402    -8.13   0.000    -2.252518   -1.377432
+       _cons |  -2.063056   .2034704   -10.14   0.000    -2.461851   -1.664262
   log(gamma) |  -.0019453    .029452    -0.07   0.947    -.0596703    .0557796
 ------------------------------------------------------------------------------
 
 . * CE FPM
-. merlin (t z x `Istudyvars', family(rp, df(3) failure(d)))
+. merlin (t cz x `Istudyvars', family(rp, df(3) failure(d)))
 variables created: _rcs1_1 to _rcs1_3
 
 Fitting full model:
 
 Iteration 0:  Log likelihood = -16398.061  (not concave)
-Iteration 1:  Log likelihood = -9506.1473  (not concave)
-Iteration 2:  Log likelihood =   -5705.93  (not concave)
-Iteration 3:  Log likelihood = -5554.7676  (not concave)
-Iteration 4:  Log likelihood = -5517.8933  (not concave)
-Iteration 5:  Log likelihood = -5513.3067  (not concave)
-Iteration 6:  Log likelihood = -5512.7034  (not concave)
-Iteration 7:  Log likelihood = -5512.4347  (not concave)
-Iteration 8:  Log likelihood = -5512.4148  (not concave)
-Iteration 9:  Log likelihood = -5512.4096  (not concave)
-Iteration 10: Log likelihood = -5512.4076  (not concave)
-Iteration 11: Log likelihood = -5512.4074  (not concave)
+Iteration 1:  Log likelihood = -9583.6322  (not concave)
+Iteration 2:  Log likelihood = -5676.7324  (not concave)
+Iteration 3:  Log likelihood = -5534.0634  (not concave)
+Iteration 4:  Log likelihood = -5516.2106  (not concave)
+Iteration 5:  Log likelihood = -5512.6902  (not concave)
+Iteration 6:  Log likelihood = -5512.4545  (not concave)
+Iteration 7:  Log likelihood = -5512.4118  (not concave)
+Iteration 8:  Log likelihood = -5512.4084  (not concave)
+Iteration 9:  Log likelihood = -5512.4075  (not concave)
+Iteration 10: Log likelihood = -5512.4074  (not concave)
+Iteration 11: Log likelihood = -5512.4073  (not concave)
 Iteration 12: Log likelihood = -5512.4073  (not concave)
 Iteration 13: Log likelihood = -5512.4073  (not concave)
 Iteration 14: Log likelihood = -5512.4073  (not concave)
@@ -2023,34 +2351,34 @@ Log likelihood = -5512.4073
              | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
 t:           |            
-           z |    -.09631   .0597635    -1.61   0.107    -.2134442    .0208242
+          cz |    -.09631   .0597635    -1.61   0.107    -.2134442    .0208242
            x |   .3829755   .0597239     6.41   0.000     .2659187    .5000322
-     Istudy1 |  -1.554219   .2310669    -6.73   0.000    -2.007102   -1.101336
-     Istudy2 |  -1.280967   .2519195    -5.08   0.000     -1.77472    -.787214
-     Istudy3 |  -.8632549   .2387209    -3.62   0.000    -1.331139   -.3953706
-     Istudy4 |   -1.08267   .2210887    -4.90   0.000    -1.515996   -.6493438
-     Istudy5 |  -1.532401   .2426458    -6.32   0.000    -2.007978   -1.056824
-     Istudy6 |  -1.288565   .2394474    -5.38   0.000    -1.757873   -.8192563
-     Istudy7 |  -1.257481   .2320574    -5.42   0.000    -1.712305   -.8026567
-     Istudy8 |  -1.141682   .2622676    -4.35   0.000    -1.655717   -.6276472
-     Istudy9 |  -1.372373   .2301196    -5.96   0.000    -1.823399   -.9213465
-    Istudy10 |  -1.015301   .2177118    -4.66   0.000    -1.442008   -.5885936
-    Istudy11 |  -1.284399    .230126    -5.58   0.000    -1.735438   -.8333603
-    Istudy12 |  -1.474167          .        .       .            .           .
-    Istudy13 |  -.8221494   .2409896    -3.41   0.001     -1.29448   -.3498183
-    Istudy14 |  -1.513919   .2622459    -5.77   0.000    -2.027911   -.9999266
-    Istudy15 |  -1.361166   .2336532    -5.83   0.000    -1.819118   -.9032145
-    Istudy16 |  -1.715991   .2830797    -6.06   0.000    -2.270817   -1.161165
-    Istudy17 |  -1.535754    .264041    -5.82   0.000    -2.053265   -1.018243
-    Istudy18 |  -1.317552   .2589325    -5.09   0.000    -1.825051   -.8100538
-    Istudy19 |   -1.44318   .2315553    -6.23   0.000     -1.89702     -.98934
-    Istudy20 |    -1.0352   .2232403    -4.64   0.000    -1.472743   -.5976568
-       _cons |   -1.28211   .2000997    -6.41   0.000    -1.674298   -.8899218
+     Istudy1 |  -1.578378   .2378978    -6.63   0.000    -2.044649   -1.112107
+     Istudy2 |  -1.305127   .2582022    -5.05   0.000    -1.811194   -.7990597
+     Istudy3 |  -.8874144   .2453334    -3.62   0.000    -1.368259   -.4065697
+     Istudy4 |  -1.106829   .2282267    -4.85   0.000    -1.554145   -.6595132
+     Istudy5 |  -1.556561   .2491743    -6.25   0.000    -2.044933   -1.068188
+     Istudy6 |  -1.312724   .2460463    -5.34   0.000    -1.794966   -.8304823
+     Istudy7 |   -1.28164   .2388677    -5.37   0.000    -1.749812   -.8134683
+     Istudy8 |  -1.165842    .268311    -4.35   0.000    -1.691722   -.6399619
+     Istudy9 |  -1.396532   .2369974    -5.89   0.000    -1.861038   -.9320258
+    Istudy10 |   -1.03946   .2249554    -4.62   0.000    -1.480365   -.5985559
+    Istudy11 |  -1.308559   .2369987    -5.52   0.000    -1.773067   -.8440496
+    Istudy12 |  -1.498327   .2830797    -5.29   0.000    -2.053153   -.9435005
+    Istudy13 |  -.8463089   .2475385    -3.42   0.001    -1.331475   -.3611424
+    Istudy14 |  -1.538079   .2682957    -5.73   0.000    -2.063929   -1.012229
+    Istudy15 |  -1.385326   .2404212    -5.76   0.000    -1.856543    -.914109
+    Istudy16 |   -1.74015          .        .       .            .           .
+    Istudy17 |  -1.559913   .2700447    -5.78   0.000    -2.089191   -1.030635
+    Istudy18 |  -1.341712   .2650313    -5.06   0.000    -1.861164   -.8222599
+    Istudy19 |   -1.46734   .2383702    -6.16   0.000    -1.934537   -1.000143
+    Istudy20 |  -1.059359   .2303122    -4.60   0.000    -1.510763   -.6079558
+       _cons |  -1.305913   .2060769    -6.34   0.000    -1.709816   -.9020094
 ------------------------------------------------------------------------------
     Warning: Baseline spline coefficients not shown - use ml display
 
 . * RE FPM
-. merlin (t z x `Istudyvars' z#M1[study]@1, family(rp, df(3) failure(d)))
+. merlin (t cz x `Istudyvars' cz#M1[study]@1, family(rp, df(3) failure(d)))
 variables created: _rcs1_1 to _rcs1_3
 
 Fitting fixed effects model:
@@ -2058,342 +2386,342 @@ convergence not achieved
 
 Fitting full model:
 
-Iteration 0:  Log likelihood = -5510.9545  (not concave)
-Iteration 1:  Log likelihood = -5509.8864  (not concave)
-Iteration 2:  Log likelihood = -5507.1064  
-Iteration 3:  Log likelihood = -5503.7738  (not concave)
-Iteration 4:  Log likelihood = -5502.8392  
-Iteration 5:  Log likelihood = -5502.7204  (not concave)
-Iteration 6:  Log likelihood = -5502.7203  (not concave)
-Iteration 7:  Log likelihood = -5502.7203  (not concave)
-Iteration 8:  Log likelihood = -5502.7203  (not concave)
-Iteration 9:  Log likelihood = -5502.7203  (not concave)
-Iteration 10: Log likelihood = -5502.7203  (not concave)
-Iteration 11: Log likelihood = -5502.7203  (not concave)
-Iteration 12: Log likelihood = -5502.7203  (not concave)
-Iteration 13: Log likelihood = -5502.7203  (not concave)
-Iteration 14: Log likelihood = -5502.7203  (not concave)
-Iteration 15: Log likelihood = -5502.7203  (not concave)
-Iteration 16: Log likelihood = -5502.7203  (not concave)
-Iteration 17: Log likelihood = -5502.7203  (not concave)
-Iteration 18: Log likelihood = -5502.7203  (not concave)
-Iteration 19: Log likelihood = -5502.7203  (not concave)
-Iteration 20: Log likelihood = -5502.7203  (not concave)
-Iteration 21: Log likelihood = -5502.7203  (not concave)
-Iteration 22: Log likelihood = -5502.7203  (not concave)
-Iteration 23: Log likelihood = -5502.7203  (not concave)
-Iteration 24: Log likelihood = -5502.7203  (not concave)
-Iteration 25: Log likelihood = -5502.7203  (not concave)
-Iteration 26: Log likelihood = -5502.7203  (not concave)
-Iteration 27: Log likelihood = -5502.7203  (not concave)
-Iteration 28: Log likelihood = -5502.7203  (not concave)
-Iteration 29: Log likelihood = -5502.7203  (not concave)
-Iteration 30: Log likelihood = -5502.7203  (not concave)
-Iteration 31: Log likelihood = -5502.7203  (not concave)
-Iteration 32: Log likelihood = -5502.7203  (not concave)
-Iteration 33: Log likelihood = -5502.7203  (not concave)
-Iteration 34: Log likelihood = -5502.7203  (not concave)
-Iteration 35: Log likelihood = -5502.7203  (not concave)
-Iteration 36: Log likelihood = -5502.7203  (not concave)
-Iteration 37: Log likelihood = -5502.7203  (not concave)
-Iteration 38: Log likelihood = -5502.7203  (not concave)
-Iteration 39: Log likelihood = -5502.7203  (not concave)
-Iteration 40: Log likelihood = -5502.7203  (not concave)
-Iteration 41: Log likelihood = -5502.7203  (not concave)
-Iteration 42: Log likelihood = -5502.7203  (not concave)
-Iteration 43: Log likelihood = -5502.7203  (not concave)
-Iteration 44: Log likelihood = -5502.7203  (not concave)
-Iteration 45: Log likelihood = -5502.7203  (not concave)
-Iteration 46: Log likelihood = -5502.7203  (not concave)
-Iteration 47: Log likelihood = -5502.7203  (not concave)
-Iteration 48: Log likelihood = -5502.7203  (not concave)
-Iteration 49: Log likelihood = -5502.7203  (not concave)
-Iteration 50: Log likelihood = -5502.7203  (not concave)
-Iteration 51: Log likelihood = -5502.7203  (not concave)
-Iteration 52: Log likelihood = -5502.7203  (not concave)
-Iteration 53: Log likelihood = -5502.7203  (not concave)
-Iteration 54: Log likelihood = -5502.7203  (not concave)
-Iteration 55: Log likelihood = -5502.7203  (not concave)
-Iteration 56: Log likelihood = -5502.7203  (not concave)
-Iteration 57: Log likelihood = -5502.7203  (not concave)
-Iteration 58: Log likelihood = -5502.7203  (not concave)
-Iteration 59: Log likelihood = -5502.7203  (not concave)
-Iteration 60: Log likelihood = -5502.7203  (not concave)
-Iteration 61: Log likelihood = -5502.7203  (not concave)
-Iteration 62: Log likelihood = -5502.7203  (not concave)
-Iteration 63: Log likelihood = -5502.7203  (not concave)
-Iteration 64: Log likelihood = -5502.7203  (not concave)
-Iteration 65: Log likelihood = -5502.7203  (not concave)
-Iteration 66: Log likelihood = -5502.7203  (not concave)
-Iteration 67: Log likelihood = -5502.7203  (not concave)
-Iteration 68: Log likelihood = -5502.7203  (not concave)
-Iteration 69: Log likelihood = -5502.7203  (not concave)
-Iteration 70: Log likelihood = -5502.7203  (not concave)
-Iteration 71: Log likelihood = -5502.7203  (not concave)
-Iteration 72: Log likelihood = -5502.7203  (not concave)
-Iteration 73: Log likelihood = -5502.7203  (not concave)
-Iteration 74: Log likelihood = -5502.7203  (not concave)
-Iteration 75: Log likelihood = -5502.7203  (not concave)
-Iteration 76: Log likelihood = -5502.7203  (not concave)
-Iteration 77: Log likelihood = -5502.7203  (not concave)
-Iteration 78: Log likelihood = -5502.7203  (not concave)
-Iteration 79: Log likelihood = -5502.7203  (not concave)
-Iteration 80: Log likelihood = -5502.7203  (not concave)
-Iteration 81: Log likelihood = -5502.7203  (not concave)
-Iteration 82: Log likelihood = -5502.7203  (not concave)
-Iteration 83: Log likelihood = -5502.7203  (not concave)
-Iteration 84: Log likelihood = -5502.7203  (not concave)
-Iteration 85: Log likelihood = -5502.7203  (not concave)
-Iteration 86: Log likelihood = -5502.7203  (not concave)
-Iteration 87: Log likelihood = -5502.7203  (not concave)
-Iteration 88: Log likelihood = -5502.7203  (not concave)
-Iteration 89: Log likelihood = -5502.7203  (not concave)
-Iteration 90: Log likelihood = -5502.7203  (not concave)
-Iteration 91: Log likelihood = -5502.7203  (not concave)
-Iteration 92: Log likelihood = -5502.7203  (not concave)
-Iteration 93: Log likelihood = -5502.7203  (not concave)
-Iteration 94: Log likelihood = -5502.7203  (not concave)
-Iteration 95: Log likelihood = -5502.7203  (not concave)
-Iteration 96: Log likelihood = -5502.7203  (not concave)
-Iteration 97: Log likelihood = -5502.7203  (not concave)
-Iteration 98: Log likelihood = -5502.7203  (not concave)
-Iteration 99: Log likelihood = -5502.7203  (not concave)
-Iteration 100: Log likelihood = -5502.7203  (not concave)
-Iteration 101: Log likelihood = -5502.7203  (not concave)
-Iteration 102: Log likelihood = -5502.7203  (not concave)
-Iteration 103: Log likelihood = -5502.7203  (not concave)
-Iteration 104: Log likelihood = -5502.7203  (not concave)
-Iteration 105: Log likelihood = -5502.7203  (not concave)
-Iteration 106: Log likelihood = -5502.7203  (not concave)
-Iteration 107: Log likelihood = -5502.7203  (not concave)
-Iteration 108: Log likelihood = -5502.7203  (not concave)
-Iteration 109: Log likelihood = -5502.7203  (not concave)
-Iteration 110: Log likelihood = -5502.7203  (not concave)
-Iteration 111: Log likelihood = -5502.7203  (not concave)
-Iteration 112: Log likelihood = -5502.7203  (not concave)
-Iteration 113: Log likelihood = -5502.7203  (not concave)
-Iteration 114: Log likelihood = -5502.7203  (not concave)
-Iteration 115: Log likelihood = -5502.7203  (not concave)
-Iteration 116: Log likelihood = -5502.7203  (not concave)
-Iteration 117: Log likelihood = -5502.7203  (not concave)
-Iteration 118: Log likelihood = -5502.7203  (not concave)
-Iteration 119: Log likelihood = -5502.7203  (not concave)
-Iteration 120: Log likelihood = -5502.7203  (not concave)
-Iteration 121: Log likelihood = -5502.7203  (not concave)
-Iteration 122: Log likelihood = -5502.7203  (not concave)
-Iteration 123: Log likelihood = -5502.7203  (not concave)
-Iteration 124: Log likelihood = -5502.7203  (not concave)
-Iteration 125: Log likelihood = -5502.7203  (not concave)
-Iteration 126: Log likelihood = -5502.7203  (not concave)
-Iteration 127: Log likelihood = -5502.7203  (not concave)
-Iteration 128: Log likelihood = -5502.7203  (not concave)
-Iteration 129: Log likelihood = -5502.7203  (not concave)
-Iteration 130: Log likelihood = -5502.7203  (not concave)
-Iteration 131: Log likelihood = -5502.7203  (not concave)
-Iteration 132: Log likelihood = -5502.7203  (not concave)
-Iteration 133: Log likelihood = -5502.7203  (not concave)
-Iteration 134: Log likelihood = -5502.7203  (not concave)
-Iteration 135: Log likelihood = -5502.7203  (not concave)
-Iteration 136: Log likelihood = -5502.7203  (not concave)
-Iteration 137: Log likelihood = -5502.7203  (not concave)
-Iteration 138: Log likelihood = -5502.7203  (not concave)
-Iteration 139: Log likelihood = -5502.7203  (not concave)
-Iteration 140: Log likelihood = -5502.7203  (not concave)
-Iteration 141: Log likelihood = -5502.7203  (not concave)
-Iteration 142: Log likelihood = -5502.7203  (not concave)
-Iteration 143: Log likelihood = -5502.7203  (not concave)
-Iteration 144: Log likelihood = -5502.7203  (not concave)
-Iteration 145: Log likelihood = -5502.7203  (not concave)
-Iteration 146: Log likelihood = -5502.7203  (not concave)
-Iteration 147: Log likelihood = -5502.7203  (not concave)
-Iteration 148: Log likelihood = -5502.7203  (not concave)
-Iteration 149: Log likelihood = -5502.7203  (not concave)
-Iteration 150: Log likelihood = -5502.7203  (not concave)
-Iteration 151: Log likelihood = -5502.7203  (not concave)
-Iteration 152: Log likelihood = -5502.7203  (not concave)
-Iteration 153: Log likelihood = -5502.7203  (not concave)
-Iteration 154: Log likelihood = -5502.7203  (not concave)
-Iteration 155: Log likelihood = -5502.7203  (not concave)
-Iteration 156: Log likelihood = -5502.7203  (not concave)
-Iteration 157: Log likelihood = -5502.7203  (not concave)
-Iteration 158: Log likelihood = -5502.7203  (not concave)
-Iteration 159: Log likelihood = -5502.7203  (not concave)
-Iteration 160: Log likelihood = -5502.7203  (not concave)
-Iteration 161: Log likelihood = -5502.7203  (not concave)
-Iteration 162: Log likelihood = -5502.7203  (not concave)
-Iteration 163: Log likelihood = -5502.7203  (not concave)
-Iteration 164: Log likelihood = -5502.7203  (not concave)
-Iteration 165: Log likelihood = -5502.7203  (not concave)
-Iteration 166: Log likelihood = -5502.7203  (not concave)
-Iteration 167: Log likelihood = -5502.7203  (not concave)
-Iteration 168: Log likelihood = -5502.7203  (not concave)
-Iteration 169: Log likelihood = -5502.7203  (not concave)
-Iteration 170: Log likelihood = -5502.7203  (not concave)
-Iteration 171: Log likelihood = -5502.7203  (not concave)
-Iteration 172: Log likelihood = -5502.7203  (not concave)
-Iteration 173: Log likelihood = -5502.7203  (not concave)
-Iteration 174: Log likelihood = -5502.7203  (not concave)
-Iteration 175: Log likelihood = -5502.7203  (not concave)
-Iteration 176: Log likelihood = -5502.7203  (not concave)
-Iteration 177: Log likelihood = -5502.7203  (not concave)
-Iteration 178: Log likelihood = -5502.7203  (not concave)
-Iteration 179: Log likelihood = -5502.7203  (not concave)
-Iteration 180: Log likelihood = -5502.7203  (not concave)
-Iteration 181: Log likelihood = -5502.7203  (not concave)
-Iteration 182: Log likelihood = -5502.7203  (not concave)
-Iteration 183: Log likelihood = -5502.7203  (not concave)
-Iteration 184: Log likelihood = -5502.7203  (not concave)
-Iteration 185: Log likelihood = -5502.7203  (not concave)
-Iteration 186: Log likelihood = -5502.7203  (not concave)
-Iteration 187: Log likelihood = -5502.7203  (not concave)
-Iteration 188: Log likelihood = -5502.7203  (not concave)
-Iteration 189: Log likelihood = -5502.7203  (not concave)
-Iteration 190: Log likelihood = -5502.7203  (not concave)
-Iteration 191: Log likelihood = -5502.7203  (not concave)
-Iteration 192: Log likelihood = -5502.7203  (not concave)
-Iteration 193: Log likelihood = -5502.7203  (not concave)
-Iteration 194: Log likelihood = -5502.7203  (not concave)
-Iteration 195: Log likelihood = -5502.7203  (not concave)
-Iteration 196: Log likelihood = -5502.7203  (not concave)
-Iteration 197: Log likelihood = -5502.7203  (not concave)
-Iteration 198: Log likelihood = -5502.7203  (not concave)
-Iteration 199: Log likelihood = -5502.7203  (not concave)
-Iteration 200: Log likelihood = -5502.7203  (not concave)
-Iteration 201: Log likelihood = -5502.7203  (not concave)
-Iteration 202: Log likelihood = -5502.7203  (not concave)
-Iteration 203: Log likelihood = -5502.7203  (not concave)
-Iteration 204: Log likelihood = -5502.7203  (not concave)
-Iteration 205: Log likelihood = -5502.7203  (not concave)
-Iteration 206: Log likelihood = -5502.7203  (not concave)
-Iteration 207: Log likelihood = -5502.7203  (not concave)
-Iteration 208: Log likelihood = -5502.7203  (not concave)
-Iteration 209: Log likelihood = -5502.7203  (not concave)
-Iteration 210: Log likelihood = -5502.7203  (not concave)
-Iteration 211: Log likelihood = -5502.7203  (not concave)
-Iteration 212: Log likelihood = -5502.7203  (not concave)
-Iteration 213: Log likelihood = -5502.7203  (not concave)
-Iteration 214: Log likelihood = -5502.7203  (not concave)
-Iteration 215: Log likelihood = -5502.7203  (not concave)
-Iteration 216: Log likelihood = -5502.7203  (not concave)
-Iteration 217: Log likelihood = -5502.7203  (not concave)
-Iteration 218: Log likelihood = -5502.7203  (not concave)
-Iteration 219: Log likelihood = -5502.7203  (not concave)
-Iteration 220: Log likelihood = -5502.7203  (not concave)
-Iteration 221: Log likelihood = -5502.7203  (not concave)
-Iteration 222: Log likelihood = -5502.7203  (not concave)
-Iteration 223: Log likelihood = -5502.7203  (not concave)
-Iteration 224: Log likelihood = -5502.7203  (not concave)
-Iteration 225: Log likelihood = -5502.7203  (not concave)
-Iteration 226: Log likelihood = -5502.7203  (not concave)
-Iteration 227: Log likelihood = -5502.7203  (not concave)
-Iteration 228: Log likelihood = -5502.7203  (not concave)
-Iteration 229: Log likelihood = -5502.7203  (not concave)
-Iteration 230: Log likelihood = -5502.7203  (not concave)
-Iteration 231: Log likelihood = -5502.7203  (not concave)
-Iteration 232: Log likelihood = -5502.7203  (not concave)
-Iteration 233: Log likelihood = -5502.7203  (not concave)
-Iteration 234: Log likelihood = -5502.7203  (not concave)
-Iteration 235: Log likelihood = -5502.7203  (not concave)
-Iteration 236: Log likelihood = -5502.7203  (not concave)
-Iteration 237: Log likelihood = -5502.7203  (not concave)
-Iteration 238: Log likelihood = -5502.7203  (not concave)
-Iteration 239: Log likelihood = -5502.7203  (not concave)
-Iteration 240: Log likelihood = -5502.7203  (not concave)
-Iteration 241: Log likelihood = -5502.7203  (not concave)
-Iteration 242: Log likelihood = -5502.7203  (not concave)
-Iteration 243: Log likelihood = -5502.7203  (not concave)
-Iteration 244: Log likelihood = -5502.7203  (not concave)
-Iteration 245: Log likelihood = -5502.7203  (not concave)
-Iteration 246: Log likelihood = -5502.7203  (not concave)
-Iteration 247: Log likelihood = -5502.7203  (not concave)
-Iteration 248: Log likelihood = -5502.7203  (not concave)
-Iteration 249: Log likelihood = -5502.7203  (not concave)
-Iteration 250: Log likelihood = -5502.7203  (not concave)
-Iteration 251: Log likelihood = -5502.7203  (not concave)
-Iteration 252: Log likelihood = -5502.7203  (not concave)
-Iteration 253: Log likelihood = -5502.7203  (not concave)
-Iteration 254: Log likelihood = -5502.7203  (not concave)
-Iteration 255: Log likelihood = -5502.7203  (not concave)
-Iteration 256: Log likelihood = -5502.7203  (not concave)
-Iteration 257: Log likelihood = -5502.7203  (not concave)
-Iteration 258: Log likelihood = -5502.7203  (not concave)
-Iteration 259: Log likelihood = -5502.7203  (not concave)
-Iteration 260: Log likelihood = -5502.7203  (not concave)
-Iteration 261: Log likelihood = -5502.7203  (not concave)
-Iteration 262: Log likelihood = -5502.7203  (not concave)
-Iteration 263: Log likelihood = -5502.7203  (not concave)
-Iteration 264: Log likelihood = -5502.7203  (not concave)
-Iteration 265: Log likelihood = -5502.7203  (not concave)
-Iteration 266: Log likelihood = -5502.7203  (not concave)
-Iteration 267: Log likelihood = -5502.7203  (not concave)
-Iteration 268: Log likelihood = -5502.7203  (not concave)
-Iteration 269: Log likelihood = -5502.7203  (not concave)
-Iteration 270: Log likelihood = -5502.7203  (not concave)
-Iteration 271: Log likelihood = -5502.7203  (not concave)
-Iteration 272: Log likelihood = -5502.7203  (not concave)
-Iteration 273: Log likelihood = -5502.7203  (not concave)
-Iteration 274: Log likelihood = -5502.7203  (not concave)
-Iteration 275: Log likelihood = -5502.7203  (not concave)
-Iteration 276: Log likelihood = -5502.7203  (not concave)
-Iteration 277: Log likelihood = -5502.7203  (not concave)
-Iteration 278: Log likelihood = -5502.7203  (not concave)
-Iteration 279: Log likelihood = -5502.7203  (not concave)
-Iteration 280: Log likelihood = -5502.7203  (not concave)
-Iteration 281: Log likelihood = -5502.7203  (not concave)
-Iteration 282: Log likelihood = -5502.7203  (not concave)
-Iteration 283: Log likelihood = -5502.7203  (not concave)
-Iteration 284: Log likelihood = -5502.7203  (not concave)
-Iteration 285: Log likelihood = -5502.7203  (not concave)
-Iteration 286: Log likelihood = -5502.7203  (not concave)
-Iteration 287: Log likelihood = -5502.7203  (not concave)
-Iteration 288: Log likelihood = -5502.7203  (not concave)
-Iteration 289: Log likelihood = -5502.7203  (not concave)
-Iteration 290: Log likelihood = -5502.7203  (not concave)
-Iteration 291: Log likelihood = -5502.7203  (not concave)
-Iteration 292: Log likelihood = -5502.7203  (not concave)
-Iteration 293: Log likelihood = -5502.7203  (not concave)
-Iteration 294: Log likelihood = -5502.7203  (not concave)
-Iteration 295: Log likelihood = -5502.7203  (not concave)
-Iteration 296: Log likelihood = -5502.7203  (not concave)
-Iteration 297: Log likelihood = -5502.7203  (not concave)
-Iteration 298: Log likelihood = -5502.7203  (not concave)
-Iteration 299: Log likelihood = -5502.7203  (not concave)
-Iteration 300: Log likelihood = -5502.7203  (not concave)
+Iteration 0:  Log likelihood = -5499.1314  (not concave)
+Iteration 1:  Log likelihood = -5498.9482  
+Iteration 2:  Log likelihood =  -5498.212  (not concave)
+Iteration 3:  Log likelihood = -5498.2115  (not concave)
+Iteration 4:  Log likelihood = -5498.2115  (not concave)
+Iteration 5:  Log likelihood = -5498.2115  (not concave)
+Iteration 6:  Log likelihood = -5498.2115  (not concave)
+Iteration 7:  Log likelihood = -5498.2115  (not concave)
+Iteration 8:  Log likelihood = -5498.2115  (not concave)
+Iteration 9:  Log likelihood = -5498.2115  (not concave)
+Iteration 10: Log likelihood = -5498.2115  (not concave)
+Iteration 11: Log likelihood = -5498.2115  (not concave)
+Iteration 12: Log likelihood = -5498.2115  (not concave)
+Iteration 13: Log likelihood = -5498.2115  (not concave)
+Iteration 14: Log likelihood = -5498.2115  (not concave)
+Iteration 15: Log likelihood = -5498.2115  (not concave)
+Iteration 16: Log likelihood = -5498.2115  (not concave)
+Iteration 17: Log likelihood = -5498.2115  (not concave)
+Iteration 18: Log likelihood = -5498.2115  (not concave)
+Iteration 19: Log likelihood = -5498.2115  (not concave)
+Iteration 20: Log likelihood = -5498.2115  (not concave)
+Iteration 21: Log likelihood = -5498.2115  (not concave)
+Iteration 22: Log likelihood = -5498.2115  (not concave)
+Iteration 23: Log likelihood = -5498.2115  (not concave)
+Iteration 24: Log likelihood = -5498.2115  (not concave)
+Iteration 25: Log likelihood = -5498.2115  (not concave)
+Iteration 26: Log likelihood = -5498.2115  (not concave)
+Iteration 27: Log likelihood = -5498.2115  (not concave)
+Iteration 28: Log likelihood = -5498.2115  (not concave)
+Iteration 29: Log likelihood = -5498.2115  (not concave)
+Iteration 30: Log likelihood = -5498.2115  (not concave)
+Iteration 31: Log likelihood = -5498.2115  (not concave)
+Iteration 32: Log likelihood = -5498.2115  (not concave)
+Iteration 33: Log likelihood = -5498.2115  (not concave)
+Iteration 34: Log likelihood = -5498.2115  (not concave)
+Iteration 35: Log likelihood = -5498.2115  (not concave)
+Iteration 36: Log likelihood = -5498.2115  (not concave)
+Iteration 37: Log likelihood = -5498.2115  (not concave)
+Iteration 38: Log likelihood = -5498.2115  (not concave)
+Iteration 39: Log likelihood = -5498.2115  (not concave)
+Iteration 40: Log likelihood = -5498.2115  (not concave)
+Iteration 41: Log likelihood = -5498.2115  (not concave)
+Iteration 42: Log likelihood = -5498.2115  (not concave)
+Iteration 43: Log likelihood = -5498.2115  (not concave)
+Iteration 44: Log likelihood = -5498.2115  (not concave)
+Iteration 45: Log likelihood = -5498.2115  (not concave)
+Iteration 46: Log likelihood = -5498.2115  (not concave)
+Iteration 47: Log likelihood = -5498.2115  (not concave)
+Iteration 48: Log likelihood = -5498.2115  (not concave)
+Iteration 49: Log likelihood = -5498.2115  (not concave)
+Iteration 50: Log likelihood = -5498.2115  (not concave)
+Iteration 51: Log likelihood = -5498.2115  (not concave)
+Iteration 52: Log likelihood = -5498.2115  (not concave)
+Iteration 53: Log likelihood = -5498.2115  (not concave)
+Iteration 54: Log likelihood = -5498.2115  (not concave)
+Iteration 55: Log likelihood = -5498.2115  (not concave)
+Iteration 56: Log likelihood = -5498.2115  (not concave)
+Iteration 57: Log likelihood = -5498.2115  (not concave)
+Iteration 58: Log likelihood = -5498.2115  (not concave)
+Iteration 59: Log likelihood = -5498.2115  (not concave)
+Iteration 60: Log likelihood = -5498.2115  (not concave)
+Iteration 61: Log likelihood = -5498.2115  (not concave)
+Iteration 62: Log likelihood = -5498.2115  (not concave)
+Iteration 63: Log likelihood = -5498.2115  (not concave)
+Iteration 64: Log likelihood = -5498.2115  (not concave)
+Iteration 65: Log likelihood = -5498.2115  (not concave)
+Iteration 66: Log likelihood = -5498.2115  (not concave)
+Iteration 67: Log likelihood = -5498.2115  (not concave)
+Iteration 68: Log likelihood = -5498.2115  (not concave)
+Iteration 69: Log likelihood = -5498.2115  (not concave)
+Iteration 70: Log likelihood = -5498.2115  (not concave)
+Iteration 71: Log likelihood = -5498.2115  (not concave)
+Iteration 72: Log likelihood = -5498.2115  (not concave)
+Iteration 73: Log likelihood = -5498.2115  (not concave)
+Iteration 74: Log likelihood = -5498.2115  (not concave)
+Iteration 75: Log likelihood = -5498.2115  (not concave)
+Iteration 76: Log likelihood = -5498.2115  (not concave)
+Iteration 77: Log likelihood = -5498.2115  (not concave)
+Iteration 78: Log likelihood = -5498.2115  (not concave)
+Iteration 79: Log likelihood = -5498.2115  (not concave)
+Iteration 80: Log likelihood = -5498.2115  (not concave)
+Iteration 81: Log likelihood = -5498.2115  (not concave)
+Iteration 82: Log likelihood = -5498.2115  (not concave)
+Iteration 83: Log likelihood = -5498.2115  (not concave)
+Iteration 84: Log likelihood = -5498.2115  (not concave)
+Iteration 85: Log likelihood = -5498.2115  (not concave)
+Iteration 86: Log likelihood = -5498.2115  (not concave)
+Iteration 87: Log likelihood = -5498.2115  (not concave)
+Iteration 88: Log likelihood = -5498.2115  (not concave)
+Iteration 89: Log likelihood = -5498.2115  (not concave)
+Iteration 90: Log likelihood = -5498.2115  (not concave)
+Iteration 91: Log likelihood = -5498.2115  (not concave)
+Iteration 92: Log likelihood = -5498.2115  (not concave)
+Iteration 93: Log likelihood = -5498.2115  (not concave)
+Iteration 94: Log likelihood = -5498.2115  (not concave)
+Iteration 95: Log likelihood = -5498.2115  (not concave)
+Iteration 96: Log likelihood = -5498.2115  (not concave)
+Iteration 97: Log likelihood = -5498.2115  (not concave)
+Iteration 98: Log likelihood = -5498.2115  (not concave)
+Iteration 99: Log likelihood = -5498.2115  (not concave)
+Iteration 100: Log likelihood = -5498.2115  (not concave)
+Iteration 101: Log likelihood = -5498.2115  (not concave)
+Iteration 102: Log likelihood = -5498.2115  (not concave)
+Iteration 103: Log likelihood = -5498.2115  (not concave)
+Iteration 104: Log likelihood = -5498.2115  (not concave)
+Iteration 105: Log likelihood = -5498.2115  (not concave)
+Iteration 106: Log likelihood = -5498.2115  (not concave)
+Iteration 107: Log likelihood = -5498.2115  (not concave)
+Iteration 108: Log likelihood = -5498.2115  (not concave)
+Iteration 109: Log likelihood = -5498.2115  (not concave)
+Iteration 110: Log likelihood = -5498.2115  (not concave)
+Iteration 111: Log likelihood = -5498.2115  (not concave)
+Iteration 112: Log likelihood = -5498.2115  (not concave)
+Iteration 113: Log likelihood = -5498.2115  (not concave)
+Iteration 114: Log likelihood = -5498.2115  (not concave)
+Iteration 115: Log likelihood = -5498.2115  (not concave)
+Iteration 116: Log likelihood = -5498.2115  (not concave)
+Iteration 117: Log likelihood = -5498.2115  (not concave)
+Iteration 118: Log likelihood = -5498.2115  (not concave)
+Iteration 119: Log likelihood = -5498.2115  (not concave)
+Iteration 120: Log likelihood = -5498.2115  (not concave)
+Iteration 121: Log likelihood = -5498.2115  (not concave)
+Iteration 122: Log likelihood = -5498.2115  (not concave)
+Iteration 123: Log likelihood = -5498.2115  (not concave)
+Iteration 124: Log likelihood = -5498.2115  (not concave)
+Iteration 125: Log likelihood = -5498.2115  (not concave)
+Iteration 126: Log likelihood = -5498.2115  (not concave)
+Iteration 127: Log likelihood = -5498.2115  (not concave)
+Iteration 128: Log likelihood = -5498.2115  (not concave)
+Iteration 129: Log likelihood = -5498.2115  (not concave)
+Iteration 130: Log likelihood = -5498.2115  (not concave)
+Iteration 131: Log likelihood = -5498.2115  (not concave)
+Iteration 132: Log likelihood = -5498.2115  (not concave)
+Iteration 133: Log likelihood = -5498.2115  (not concave)
+Iteration 134: Log likelihood = -5498.2115  (not concave)
+Iteration 135: Log likelihood = -5498.2115  (not concave)
+Iteration 136: Log likelihood = -5498.2115  (not concave)
+Iteration 137: Log likelihood = -5498.2115  (not concave)
+Iteration 138: Log likelihood = -5498.2115  (not concave)
+Iteration 139: Log likelihood = -5498.2115  (not concave)
+Iteration 140: Log likelihood = -5498.2115  (not concave)
+Iteration 141: Log likelihood = -5498.2115  (not concave)
+Iteration 142: Log likelihood = -5498.2115  (not concave)
+Iteration 143: Log likelihood = -5498.2115  (not concave)
+Iteration 144: Log likelihood = -5498.2115  (not concave)
+Iteration 145: Log likelihood = -5498.2115  (not concave)
+Iteration 146: Log likelihood = -5498.2115  (not concave)
+Iteration 147: Log likelihood = -5498.2115  (not concave)
+Iteration 148: Log likelihood = -5498.2115  (not concave)
+Iteration 149: Log likelihood = -5498.2115  (not concave)
+Iteration 150: Log likelihood = -5498.2115  (not concave)
+Iteration 151: Log likelihood = -5498.2115  (not concave)
+Iteration 152: Log likelihood = -5498.2115  (not concave)
+Iteration 153: Log likelihood = -5498.2115  (not concave)
+Iteration 154: Log likelihood = -5498.2115  (not concave)
+Iteration 155: Log likelihood = -5498.2115  (not concave)
+Iteration 156: Log likelihood = -5498.2115  (not concave)
+Iteration 157: Log likelihood = -5498.2115  (not concave)
+Iteration 158: Log likelihood = -5498.2115  (not concave)
+Iteration 159: Log likelihood = -5498.2115  (not concave)
+Iteration 160: Log likelihood = -5498.2115  (not concave)
+Iteration 161: Log likelihood = -5498.2115  (not concave)
+Iteration 162: Log likelihood = -5498.2115  (not concave)
+Iteration 163: Log likelihood = -5498.2115  (not concave)
+Iteration 164: Log likelihood = -5498.2115  (not concave)
+Iteration 165: Log likelihood = -5498.2115  (not concave)
+Iteration 166: Log likelihood = -5498.2115  (not concave)
+Iteration 167: Log likelihood = -5498.2115  (not concave)
+Iteration 168: Log likelihood = -5498.2115  (not concave)
+Iteration 169: Log likelihood = -5498.2115  (not concave)
+Iteration 170: Log likelihood = -5498.2115  (not concave)
+Iteration 171: Log likelihood = -5498.2115  (not concave)
+Iteration 172: Log likelihood = -5498.2115  (not concave)
+Iteration 173: Log likelihood = -5498.2115  (not concave)
+Iteration 174: Log likelihood = -5498.2115  (not concave)
+Iteration 175: Log likelihood = -5498.2115  (not concave)
+Iteration 176: Log likelihood = -5498.2115  (not concave)
+Iteration 177: Log likelihood = -5498.2115  (not concave)
+Iteration 178: Log likelihood = -5498.2115  (not concave)
+Iteration 179: Log likelihood = -5498.2115  (not concave)
+Iteration 180: Log likelihood = -5498.2115  (not concave)
+Iteration 181: Log likelihood = -5498.2115  (not concave)
+Iteration 182: Log likelihood = -5498.2115  (not concave)
+Iteration 183: Log likelihood = -5498.2115  (not concave)
+Iteration 184: Log likelihood = -5498.2115  (not concave)
+Iteration 185: Log likelihood = -5498.2115  (not concave)
+Iteration 186: Log likelihood = -5498.2115  (not concave)
+Iteration 187: Log likelihood = -5498.2115  (not concave)
+Iteration 188: Log likelihood = -5498.2115  (not concave)
+Iteration 189: Log likelihood = -5498.2115  (not concave)
+Iteration 190: Log likelihood = -5498.2115  (not concave)
+Iteration 191: Log likelihood = -5498.2115  (not concave)
+Iteration 192: Log likelihood = -5498.2115  (not concave)
+Iteration 193: Log likelihood = -5498.2115  (not concave)
+Iteration 194: Log likelihood = -5498.2115  (not concave)
+Iteration 195: Log likelihood = -5498.2115  (not concave)
+Iteration 196: Log likelihood = -5498.2115  (not concave)
+Iteration 197: Log likelihood = -5498.2115  (not concave)
+Iteration 198: Log likelihood = -5498.2115  (not concave)
+Iteration 199: Log likelihood = -5498.2115  (not concave)
+Iteration 200: Log likelihood = -5498.2115  (not concave)
+Iteration 201: Log likelihood = -5498.2115  (not concave)
+Iteration 202: Log likelihood = -5498.2115  (not concave)
+Iteration 203: Log likelihood = -5498.2115  (not concave)
+Iteration 204: Log likelihood = -5498.2115  (not concave)
+Iteration 205: Log likelihood = -5498.2115  (not concave)
+Iteration 206: Log likelihood = -5498.2115  (not concave)
+Iteration 207: Log likelihood = -5498.2115  (not concave)
+Iteration 208: Log likelihood = -5498.2115  (not concave)
+Iteration 209: Log likelihood = -5498.2115  (not concave)
+Iteration 210: Log likelihood = -5498.2115  (not concave)
+Iteration 211: Log likelihood = -5498.2115  (not concave)
+Iteration 212: Log likelihood = -5498.2115  (not concave)
+Iteration 213: Log likelihood = -5498.2115  (not concave)
+Iteration 214: Log likelihood = -5498.2115  (not concave)
+Iteration 215: Log likelihood = -5498.2115  (not concave)
+Iteration 216: Log likelihood = -5498.2115  (not concave)
+Iteration 217: Log likelihood = -5498.2115  (not concave)
+Iteration 218: Log likelihood = -5498.2115  (not concave)
+Iteration 219: Log likelihood = -5498.2115  (not concave)
+Iteration 220: Log likelihood = -5498.2115  (not concave)
+Iteration 221: Log likelihood = -5498.2115  (not concave)
+Iteration 222: Log likelihood = -5498.2115  (not concave)
+Iteration 223: Log likelihood = -5498.2115  (not concave)
+Iteration 224: Log likelihood = -5498.2115  (not concave)
+Iteration 225: Log likelihood = -5498.2115  (not concave)
+Iteration 226: Log likelihood = -5498.2115  (not concave)
+Iteration 227: Log likelihood = -5498.2115  (not concave)
+Iteration 228: Log likelihood = -5498.2115  (not concave)
+Iteration 229: Log likelihood = -5498.2115  (not concave)
+Iteration 230: Log likelihood = -5498.2115  (not concave)
+Iteration 231: Log likelihood = -5498.2115  (not concave)
+Iteration 232: Log likelihood = -5498.2115  (not concave)
+Iteration 233: Log likelihood = -5498.2115  (not concave)
+Iteration 234: Log likelihood = -5498.2115  (not concave)
+Iteration 235: Log likelihood = -5498.2115  (not concave)
+Iteration 236: Log likelihood = -5498.2115  (not concave)
+Iteration 237: Log likelihood = -5498.2115  (not concave)
+Iteration 238: Log likelihood = -5498.2115  (not concave)
+Iteration 239: Log likelihood = -5498.2115  (not concave)
+Iteration 240: Log likelihood = -5498.2115  (not concave)
+Iteration 241: Log likelihood = -5498.2115  (not concave)
+Iteration 242: Log likelihood = -5498.2115  (not concave)
+Iteration 243: Log likelihood = -5498.2115  (not concave)
+Iteration 244: Log likelihood = -5498.2115  (not concave)
+Iteration 245: Log likelihood = -5498.2115  (not concave)
+Iteration 246: Log likelihood = -5498.2115  (not concave)
+Iteration 247: Log likelihood = -5498.2115  (not concave)
+Iteration 248: Log likelihood = -5498.2115  (not concave)
+Iteration 249: Log likelihood = -5498.2115  (not concave)
+Iteration 250: Log likelihood = -5498.2115  (not concave)
+Iteration 251: Log likelihood = -5498.2115  (not concave)
+Iteration 252: Log likelihood = -5498.2115  (not concave)
+Iteration 253: Log likelihood = -5498.2115  (not concave)
+Iteration 254: Log likelihood = -5498.2115  (not concave)
+Iteration 255: Log likelihood = -5498.2115  (not concave)
+Iteration 256: Log likelihood = -5498.2115  (not concave)
+Iteration 257: Log likelihood = -5498.2115  (not concave)
+Iteration 258: Log likelihood = -5498.2115  (not concave)
+Iteration 259: Log likelihood = -5498.2115  (not concave)
+Iteration 260: Log likelihood = -5498.2115  (not concave)
+Iteration 261: Log likelihood = -5498.2115  (not concave)
+Iteration 262: Log likelihood = -5498.2115  (not concave)
+Iteration 263: Log likelihood = -5498.2115  (not concave)
+Iteration 264: Log likelihood = -5498.2115  (not concave)
+Iteration 265: Log likelihood = -5498.2115  (not concave)
+Iteration 266: Log likelihood = -5498.2115  (not concave)
+Iteration 267: Log likelihood = -5498.2115  (not concave)
+Iteration 268: Log likelihood = -5498.2115  (not concave)
+Iteration 269: Log likelihood = -5498.2115  (not concave)
+Iteration 270: Log likelihood = -5498.2115  (not concave)
+Iteration 271: Log likelihood = -5498.2115  (not concave)
+Iteration 272: Log likelihood = -5498.2115  (not concave)
+Iteration 273: Log likelihood = -5498.2115  (not concave)
+Iteration 274: Log likelihood = -5498.2115  (not concave)
+Iteration 275: Log likelihood = -5498.2115  (not concave)
+Iteration 276: Log likelihood = -5498.2115  (not concave)
+Iteration 277: Log likelihood = -5498.2115  (not concave)
+Iteration 278: Log likelihood = -5498.2115  (not concave)
+Iteration 279: Log likelihood = -5498.2115  (not concave)
+Iteration 280: Log likelihood = -5498.2115  (not concave)
+Iteration 281: Log likelihood = -5498.2115  (not concave)
+Iteration 282: Log likelihood = -5498.2115  (not concave)
+Iteration 283: Log likelihood = -5498.2115  (not concave)
+Iteration 284: Log likelihood = -5498.2115  (not concave)
+Iteration 285: Log likelihood = -5498.2115  (not concave)
+Iteration 286: Log likelihood = -5498.2115  (not concave)
+Iteration 287: Log likelihood = -5498.2115  (not concave)
+Iteration 288: Log likelihood = -5498.2115  (not concave)
+Iteration 289: Log likelihood = -5498.2115  (not concave)
+Iteration 290: Log likelihood = -5498.2115  (not concave)
+Iteration 291: Log likelihood = -5498.2115  (not concave)
+Iteration 292: Log likelihood = -5498.2115  (not concave)
+Iteration 293: Log likelihood = -5498.2115  (not concave)
+Iteration 294: Log likelihood = -5498.2115  (not concave)
+Iteration 295: Log likelihood = -5498.2115  (not concave)
+Iteration 296: Log likelihood = -5498.2115  (not concave)
+Iteration 297: Log likelihood = -5498.2115  (not concave)
+Iteration 298: Log likelihood = -5498.2115  (not concave)
+Iteration 299: Log likelihood = -5498.2115  (not concave)
+Iteration 300: Log likelihood = -5498.2115  (not concave)
 convergence not achieved
 
 Mixed effects regression model                          Number of obs = 12,239
-Log likelihood = -5502.7203
+Log likelihood = -5498.2115
 ------------------------------------------------------------------------------
              | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
 t:           |            
-           z |  -.0928066   .1023914    -0.91   0.365    -.2934901    .1078768
-           x |   .3923371   .0598223     6.56   0.000     .2750876    .5095866
-     Istudy1 |  -1.345151   .2793434    -4.82   0.000    -1.892654   -.7976478
-     Istudy2 |  -1.305979   .3072542    -4.25   0.000    -1.908187   -.7037721
-     Istudy3 |  -.9273757    .294083    -3.15   0.002    -1.503768   -.3509836
-     Istudy4 |  -1.493044   .2897096    -5.15   0.000    -2.060864   -.9252233
-     Istudy5 |  -1.283088   .2930781    -4.38   0.000    -1.857511   -.7086657
-     Istudy6 |  -1.425503   .2991788    -4.76   0.000    -2.011882   -.8391229
-     Istudy7 |  -1.328095   .2882662    -4.61   0.000    -1.893087   -.7631039
-     Istudy8 |  -1.182618   .3210927    -3.68   0.000    -1.811948   -.5532882
-     Istudy9 |  -1.293105   .2821615    -4.58   0.000    -1.846131   -.7400782
-    Istudy10 |   -.843984   .2657958    -3.18   0.001    -1.364934   -.3230338
-    Istudy11 |  -1.171752   .2813459    -4.16   0.000     -1.72318    -.620324
-    Istudy12 |  -1.616431   .3424117    -4.72   0.000    -2.287545   -.9453161
-    Istudy13 |   -.983458   .3007265    -3.27   0.001    -1.572871   -.3940448
-    Istudy14 |  -1.552272   .3211862    -4.83   0.000    -2.181785   -.9227585
-    Istudy15 |  -1.508223   .2938686    -5.13   0.000    -2.084195   -.9322515
-    Istudy16 |  -1.745303          .        .       .            .           .
-    Istudy17 |  -1.603593   .3233011    -4.96   0.000    -2.237252   -.9699348
-    Istudy18 |  -1.434267   .3174277    -4.52   0.000    -2.056414     -.81212
-    Istudy19 |  -1.392653   .2825961    -4.93   0.000    -1.946531   -.8387747
-    Istudy20 |  -1.032028   .2758667    -3.74   0.000    -1.572717   -.4913394
- z#M1[study] |          1          .        .       .            .           .
-       _cons |  -1.277048   .2413571    -5.29   0.000      -1.7501   -.8039973
+          cz |  -.0757376   .1114569    -0.68   0.497    -.2941892     .142714
+           x |   .3929905   .0598242     6.57   0.000     .2757372    .5102438
+     Istudy1 |  -1.650734   .2356266    -7.01   0.000    -2.112554   -1.188915
+     Istudy2 |  -1.316108   .2531927    -5.20   0.000    -1.812357   -.8198598
+     Istudy3 |  -.8950293   .2399047    -3.73   0.000    -1.365234   -.4248247
+     Istudy4 |   -1.16115   .2241426    -5.18   0.000    -1.600461   -.7218385
+     Istudy5 |  -1.626753   .2477009    -6.57   0.000    -2.112238   -1.141268
+     Istudy6 |  -1.324752   .2407468    -5.50   0.000    -1.796607   -.8528971
+     Istudy7 |  -1.291345   .2332373    -5.54   0.000    -1.748482   -.8342083
+     Istudy8 |  -1.179385   .2634631    -4.48   0.000    -1.695763    -.663007
+     Istudy9 |  -1.412697   .2316052    -6.10   0.000    -1.866635   -.9587591
+    Istudy10 |  -1.079273   .2199769    -4.91   0.000     -1.51042   -.6481268
+    Istudy11 |  -1.330987   .2318954    -5.74   0.000    -1.785494   -.8764807
+    Istudy12 |    -1.5179          .        .       .            .           .
+    Istudy13 |  -.8537489   .2422347    -3.52   0.000     -1.32852   -.3789776
+    Istudy14 |  -1.551466   .2634434    -5.89   0.000    -2.067805   -1.035126
+    Istudy15 |  -1.401427   .2350957    -5.96   0.000    -1.862206   -.9406478
+    Istudy16 |  -1.752637   .2846127    -6.16   0.000    -2.310467   -1.194806
+    Istudy17 |   -1.57289   .2652466    -5.93   0.000    -2.092763   -1.053016
+    Istudy18 |  -1.348046   .2601074    -5.18   0.000    -1.857848   -.8382453
+    Istudy19 |  -1.485372     .23326    -6.37   0.000    -1.942553   -1.028191
+    Istudy20 |  -1.068736   .2244367    -4.76   0.000    -1.508624   -.6288485
+cz#M1[study] |          1          .        .       .            .           .
+       _cons |  -1.306565   .1992649    -6.56   0.000    -1.697117   -.9160126
 -------------+----------------------------------------------------------------
 study:       |            
-      sd(M1) |   .3582716   .0868727                      .2227488    .5762479
+      sd(M1) |   .4079038   .0912317                      .2631347    .6323206
 ------------------------------------------------------------------------------
     Warning: Baseline spline coefficients not shown - use ml display
 
@@ -2402,5 +2730,5 @@ end of do-file
       name:  <unnamed>
        log:  C:\ian\git\TwoStagePoisson\simulation\choose1S_RE.log
   log type:  text
- closed on:  25 Feb 2026, 10:22:07
-----------------------------------------------------------------------------------------------------------
+ closed on:  25 Feb 2026, 20:18:34
+-------------------------------------------------------------------------------------

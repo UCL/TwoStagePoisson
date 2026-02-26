@@ -56,10 +56,20 @@ di _b[z], _se[z], sqrt(_b[/var(z[study])])
 * weibull
 mestreg z x i.study || study: z, nocons dist(weib) nohr
 di _b[z], _se[z], sqrt(_b[/var(z[study])])
+* weibull and centred treatment
+summ z, meanonly
+gen cz = z - r(mean)
+mestreg cz x i.study || study: cz, nocons dist(weib) nohr
+di _b[cz], _se[cz], sqrt(_b[/var(cz[study])])
+* centring other variables has no effect
+summ x, meanonly
+gen cx = x - r(mean)
+mestreg cz cx i.study || study: cz, nocons dist(weib) nohr
+di _b[cz], _se[cz], sqrt(_b[/var(cz[study])])
 
 // merlin: why it's not OK
 * CE, ignore study
-stmerlin z x, dist(rp) df(3)
+stmerlin cz x, dist(rp) df(3)
 
 * CE, correctly adjusting for study: none of these converge
 forvalues i=1/20 {
@@ -70,8 +80,8 @@ forvalues i=1/20 {
 * stmerlin z x `Istudyvars' z#M1[study]@1, dist(rp) df(3)
 
 * CE weibull
-merlin (t z x `Istudyvars', family(weibull, failure(d)))
+merlin (t cz x `Istudyvars', family(weibull, failure(d)))
 * CE FPM
-merlin (t z x `Istudyvars', family(rp, df(3) failure(d)))
+merlin (t cz x `Istudyvars', family(rp, df(3) failure(d)))
 * RE FPM
-merlin (t z x `Istudyvars' z#M1[study]@1, family(rp, df(3) failure(d)))
+merlin (t cz x `Istudyvars' cz#M1[study]@1, family(rp, df(3) failure(d)))
