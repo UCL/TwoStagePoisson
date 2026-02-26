@@ -1,5 +1,7 @@
 /* 
-*! v0.3 IW 1oct2025
+*! v0.4 IW 26feb2026
+	name defaults to current frame name
+v0.3 IW 1oct2025
 	new simsetup program that stores settings as char
 simrun suite
 simsetup IW 1oct2025
@@ -11,8 +13,9 @@ Frame notes:
 
 prog def simsetup
 version 16
-syntax, name(name) PROGram(namelist max=2)	/// name of program that generates and analyses data
-	[FOLDer(string)	/// name of folder to contain results and rngstate files (default: simrun_results)
+syntax, PROGram(namelist max=2)	/// name of program that generates and analyses data
+	[name(name) 	/// file name stub for results and rngstate files
+	FOLDer(string)	/// name of folder to contain results and rngstate files (default: simrun_results)
 	]
 
 * LEARN NAMES OF DGM PARMS AND OUTPUTS
@@ -32,6 +35,7 @@ foreach frame in results data rngstates {
 }
 qui frame
 local settings = r(currentframe)
+if mi("`name'") local name `settings'
 
 * SORT OUT FOLDER
 if missing("`folder'") local folder simrun_results
