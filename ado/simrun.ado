@@ -55,7 +55,7 @@ if !mi("`append'") & !mi("`replace'") {
 	exit 198
 }
 
-foreach frame in settings results data rngstates {
+foreach frame in results data rngstates {
 	local `frame' simrun_`frame'
 }
 // END OF PARSING

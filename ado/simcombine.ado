@@ -22,7 +22,7 @@ frame `settings' {
 	}
 }
 
-foreach frame in settings results data {
+foreach frame in results data {
 	local `frame' simrun_`frame'
 }
 

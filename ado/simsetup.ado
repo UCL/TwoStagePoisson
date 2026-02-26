@@ -26,10 +26,12 @@ local inputs = r(inputs)
 local outputs = r(outputs)
 
 * SORT OUT FRAME NAMES
-foreach frame in settings results data rngstates {
+foreach frame in results data rngstates {
 	cap frame create simrun_`frame'
 	local `frame' simrun_`frame'
 }
+qui frame
+local settings = r(currentframe)
 
 * SORT OUT FOLDER
 if missing("`folder'") local folder simrun_results
