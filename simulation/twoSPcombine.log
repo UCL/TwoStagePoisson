@@ -1,0 +1,791 @@
+------------------------------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  C:\ian\git\TwoStagePoisson\simulation\twoSPcombine.log
+  log type:  text
+ opened on:  26 Mar 2026, 11:55:27
+
+. /*
+> twoSPcombine.do
+> IW 26mar2026
+> combine results of the two runs (same setting, different methods) in data twoSPcombine.dta
+> */
+. 
+. // Check the two data sets agree
+. 
+. do twoSPsimrun2
+
+. /*
+> twoSPsimrun2.do
+> Simulation study to evaluate two-stage Poisson (2SP) method for meta-analysis of TTE data
+> Main program
+> Part 2: twoSPsimprog2.do changes analysis only to include more one-stage models:
+>         Cox CE with interaction (1SCinter)
+>         Weibull CE (1SWei)
+>         Weibull RE (1SWei_ML)
+> IW 25feb2026
+> */
+. 
+. // User-specific settings
+. cd C:\ian\git\TwoStagePoisson\simulation
+C:\ian\git\TwoStagePoisson\simulation
+
+. adopath ++ C:\ian\git\TwoStagePoisson\ado
+  [1]              "C:\ian\git\TwoStagePoisson\ado"
+  [2]  (BASE)      "C:\Program Files\StataNow19\ado\base/"
+  [3]  (SITE)      "C:\Program Files\StataNow19\ado\site/"
+  [4]              "."
+  [5]  (PERSONAL)  "c:\ian\ado\personal/"
+  [6]  (PLUS)      "c:\ian\ado\plus/"
+  [7]  (OLDPLACE)  "c:\ado/"
+
+. set scheme mrc
+
+. 
+. // SET UP DGMS
+. prog drop _all
+
+. cap frame create simrun2_settings
+
+. frame change simrun2_settings
+
+. clear 
+
+. makegrid tau, values(0 0.3)
+(2 observations created)
+
+. makegrid gamma, values(-6 -5 -4)
+(4 observations created)
+
+. makegrid aratio, values(1 2)
+(6 observations created)
+
+. makegrid studies, values(5 20)
+(12 observations created)
+
+. gen bx = .4 
+
+. gen beta = -0.3
+
+. gen cens = 5
+
+. gen nobslow = 300
+
+. gen nobsupp = 1000
+
+. gen px = .4
+
+. 
+. gen reps = 2000
+
+. gen seed = 42
+
+. gsort studies -tau -gamma aratio // start with k=5 (faster) and tau=0.3 (more problematic)
+
+. 
+. * load the simulation program
+. do twoSPsimprog2
+
+. /*
+> Simulation study to evaluate two-stage Poisson (2SP) method for meta-analysis of TTE data
+> Simulation definition program (see twoSPsimrun for the main program)
+> Part 2: change analysis only to include more one-stage models:
+>         Cox CE with interaction (1SCinter)
+>         Weibull CE (1SWei)
+>         Weibull RE (1SWei_ML)
+>         Weibull RE + centred trt (1SWei_MLc)
+> IW 25feb2026
+> */
+. cap program drop twoSPsimgen
+
+. cap program drop twoSPsimana2
+
+. 
+. program define twoSPsimgen, rclass
+  1. 
+. // FOR SIMRUN
+. local inputs studies nobslow nobsupp px aratio gamma bx beta tau cens
+  2. if "`0'"=="?" {
+  3.         return local inputs `inputs'
+  4.         exit
+  5. }
+  6. 
+. // GENERATE THE DATA
+. version 14
+  7. syntax, studies(int) nobslow(int) nobsupp(int) px(real) aratio(real) gamma(real) bx(real) beta(re
+> al) tau(real) cens(real)
+  8. assert `studies'>1
+  9. assert inrange(`px',0,1)
+ 10. assert `aratio'>0
+ 11. clear
+ 12. qui set obs `studies'
+ 13. gen study = _n
+ 14. gen nobs = runiformint(`nobslow',`nobsupp')
+ 15. gen bz = rnormal(`beta',`tau')
+ 16. qui expand nobs
+ 17. drop nobs
+ 18. sort study
+ 19. by study: gen id = _n
+ 20. gen x = runiform()<`px'
+ 21. gen z = runiform()>1/(1+`aratio')
+ 22. gen t = -log(runiform())/exp(`gamma'+`bx'*x+bz*z)
+ 23. gen d = t<=`cens'
+ 24. qui replace t = `cens' if !d
+ 25. drop bz
+ 26. stset t, failure(d)
+ 27. 
+. * Form 2-stage data
+. byvar study, b(z) se(z) generate unique: stcox z x
+ 28. rename Bz_ b
+ 29. rename Sz_ se
+ 30. assert mi(b)==(id>1)
+ 31. egen d1 = sum(d*z), by(study)
+ 32. egen d0 = sum(d*(1-z)), by(study)
+ 33. egen p1 = sum(t*z), by(study)
+ 34. egen p0 = sum(t*(1-z)), by(study)
+ 35. foreach var of varlist d? p? {
+ 36.         qui replace `var' = . if id>1
+ 37. }
+ 38. * handle single-zero studies
+. qui replace b = ln(d1+.5)-ln(p1)-ln(d0+.5)+ln(p0) if min(d0,d1)==0 
+ 39. qui replace se = sqrt( 1/(d1+.5) + 1/(d0+.5) )    if min(d0,d1)==0
+ 40. * handle double-zero studies
+. qui replace b = . if max(d0,d1)==0
+ 41. qui replace se = . if max(d0,d1)==0
+ 42. 
+. end
+
+. 
+. /************** end of twoSPsimgen ******************/
+. 
+. /************** start of twoSPsimana ******************/
+. 
+. prog def twoSPsimana2, rclass
+  1. 
+. * descriptive outputs
+. local outputs n d singlezeroes doublezeroes sdb sdbw
+  2. * analysis outputs
+. foreach method in 1SC 1SCinter 1SWei 1SWei_ML 1SWei_MLc {
+  3.         local outputs `outputs' b`method' s`method' tau`method' error`method' 
+  4. }
+  5. if "`0'"=="?" {
+  6.         return local outputs `outputs'
+  7.         exit
+  8. }
+  9. 
+. // DESCRIPTIVE STATISTICS
+. sum d, meanonly
+ 10. local n=r(N)
+ 11. local d=r(sum)
+ 12. qui count if d0==0 & d1==0 & id==1
+ 13. local doublezeroes = r(N)
+ 14. qui count if (d0==0 | d1==0) & id==1
+ 15. local singlezeroes = r(N)-`doublezeroes'
+ 16. * var(b)
+. qui sum b
+ 17. local sdb = r(sd)
+ 18. qui sum b [w=1/se^2]
+ 19. local sdbw = r(sd)
+ 20. 
+. // ANALYSE THE DATA
+. * Method 1: one-stage Cox
+. timer on 1
+ 21. cap stcox z x, strata(study)
+ 22. timer off 1
+ 23. if _rc==1 exit 1
+ 24. if _rc==0 {
+ 25.         local method 1SC
+ 26.         local b`method' = _b[z]
+ 27.         local s`method' = _se[z]
+ 28.         local tau`method' = 0
+ 29.         local error`method' = !e(converged)
+ 30. }
+ 31. 
+. * Method 11: one-stage Cox with interaction
+. timer on 11
+ 32. cap stcox z i.study##x, strata(study)
+ 33. timer off 11
+ 34. if _rc==1 exit 1
+ 35. if _rc==0 {
+ 36.         local method 1SCinter
+ 37.         local b`method' = _b[z]
+ 38.         local s`method' = _se[z]
+ 39.         local tau`method' = 0
+ 40.         local error`method' = !e(converged)
+ 41. }
+ 42. 
+. * Method 12: one-stage Weibull
+. timer on 12
+ 43. cap streg z x, strata(study) dist(weibull)
+ 44. timer off 12
+ 45. if _rc==1 exit 1
+ 46. if _rc==0 {
+ 47.         local method 1SWei
+ 48.         local b`method' = _b[z]
+ 49.         local s`method' = _se[z]
+ 50.         local tau`method' = 0
+ 51.         local error`method' = !e(converged)
+ 52. }
+ 53. 
+. * Method 13: one-stage Weibull with RE
+. timer on 13
+ 54. cap mestreg z x i.study || study:z, nocons dist(weibull)
+ 55. timer off 13
+ 56. if _rc==1 exit 1
+ 57. if _rc==0 {
+ 58.         local method 1SWei_ML
+ 59.         local b`method' = _b[z]
+ 60.         local s`method' = _se[z]
+ 61.         local tau`method' = sqrt(_b[/var(z[study])])
+ 62.         local error`method' = !e(converged)
+ 63. }
+ 64. 
+. * Method 14: one-stage Weibull with RE, treatment centred
+. timer on 14
+ 65. summ z, meanonly
+ 66. gen cz = z - r(mean)
+ 67. cap mestreg cz x i.study || study:cz, nocons dist(weibull)
+ 68. timer off 14
+ 69. if _rc==1 exit 1
+ 70. if _rc==0 {
+ 71.         local method 1SWei_MLc
+ 72.         local b`method' = _b[cz]
+ 73.         local s`method' = _se[cz]
+ 74.         local tau`method' = sqrt(_b[/var(cz[study])])
+ 75.         local error`method' = !e(converged)
+ 76. }
+ 77. 
+. foreach output of local outputs {
+ 78.         if !mi("``output''") return scalar `output' = ``output''
+ 79.         else return scalar `output' = .
+ 80. }
+ 81. 
+. end
+
+. 
+. /************** end of twoSPsimana ******************/
+. 
+. 
+end of do-file
+
+. 
+. simsetup, name(twoSPsim2) folder(simrun2_results) prog(twoSPsimgen twoSPsimana2)
+
+. timer clear
+
+. simrun, append settings(simrun2_settings)
+Current state of simulation:
+
+     +----------------------------------------------------------------------------------------------+
+     | studies   nobslow   nobsupp   px   aratio   gamma   bx   beta   tau   cens   reps   donereps |
+     |----------------------------------------------------------------------------------------------|
+  1. |       5       300      1000   .4        1      -4   .4    -.3    .3      5   2000       2000 |
+  2. |       5       300      1000   .4        2      -4   .4    -.3    .3      5   2000       2000 |
+  3. |       5       300      1000   .4        1      -5   .4    -.3    .3      5   2000       2000 |
+  4. |       5       300      1000   .4        2      -5   .4    -.3    .3      5   2000       2000 |
+  5. |       5       300      1000   .4        1      -6   .4    -.3    .3      5   2000       2000 |
+     |----------------------------------------------------------------------------------------------|
+  6. |       5       300      1000   .4        2      -6   .4    -.3    .3      5   2000       2000 |
+  7. |       5       300      1000   .4        1      -4   .4    -.3     0      5   2000       2000 |
+  8. |       5       300      1000   .4        2      -4   .4    -.3     0      5   2000       2000 |
+  9. |       5       300      1000   .4        1      -5   .4    -.3     0      5   2000       2000 |
+ 10. |       5       300      1000   .4        2      -5   .4    -.3     0      5   2000       2000 |
+     |----------------------------------------------------------------------------------------------|
+ 11. |       5       300      1000   .4        1      -6   .4    -.3     0      5   2000       2000 |
+ 12. |       5       300      1000   .4        2      -6   .4    -.3     0      5   2000       2000 |
+ 13. |      20       300      1000   .4        1      -4   .4    -.3    .3      5   2000       2000 |
+ 14. |      20       300      1000   .4        2      -4   .4    -.3    .3      5   2000       2000 |
+ 15. |      20       300      1000   .4        1      -5   .4    -.3    .3      5   2000       2000 |
+     |----------------------------------------------------------------------------------------------|
+ 16. |      20       300      1000   .4        2      -5   .4    -.3    .3      5   2000       2000 |
+ 17. |      20       300      1000   .4        1      -6   .4    -.3    .3      5   2000       2000 |
+ 18. |      20       300      1000   .4        2      -6   .4    -.3    .3      5   2000       2000 |
+ 19. |      20       300      1000   .4        1      -4   .4    -.3     0      5   2000       2000 |
+ 20. |      20       300      1000   .4        2      -4   .4    -.3     0      5   2000       2000 |
+     |----------------------------------------------------------------------------------------------|
+ 21. |      20       300      1000   .4        1      -5   .4    -.3     0      5   2000       2000 |
+ 22. |      20       300      1000   .4        2      -5   .4    -.3     0      5   2000       2000 |
+ 23. |      20       300      1000   .4        1      -6   .4    -.3     0      5   2000       2000 |
+ 24. |      20       300      1000   .4        2      -6   .4    -.3     0      5   2000       2000 |
+     +----------------------------------------------------------------------------------------------+
+Nothing to do
+
+. timer list
+
+. 
+. 
+end of do-file
+
+. simcombine, settings(simrun2_settings)
+Reading 24 files........................
+Results loaded into current frame simrun_results
+
+. drop nobslow nobsupp px bx beta cens
+
+. isid studies aratio gamma tau rep
+
+. sort studies aratio gamma tau rep
+
+. su b*
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+        b1SC |     48,000   -.2799451    .2052547  -1.948192   1.771473
+   b1SCinter |     48,000   -.2801217    .2054974  -1.954201   1.776035
+      b1SWei |     47,949   -.2803185    .2050993  -1.949821   1.773286
+   b1SWei_ML |     47,982   -.2854524    .2079631  -1.949812   1.772875
+  b1SWei_MLc |     47,954   -.2834387    .2068275  -1.949812   1.772852
+
+. * b1SC b1SCinter b1SWei b1SWei_ML b1SWei_MLc
+. recast double studies aratio gamma tau, force
+
+. replace tau = round(tau,1E-3)
+(24,000 real changes made)
+
+. save z2, replace
+file z2.dta saved
+
+. 
+. do twoSPsimrun
+
+. /*
+> twoSPsimrun.do
+> Simulation study to evaluate two-stage Poisson (2SP) method for meta-analysis of TTE data
+> Main program
+> 2000 reps of 5 studies takes ~0.5-1hs; of 20 studies, 2-3h
+> IW Sep 2025
+> 1oct2025 matches updated simrun.ado
+> 19dec2025 for paper v0.3
+> 29jan2026 for paper v0.4
+> 25feb2026 moved graphs and tables to twoSPsimresults.do
+> */
+. 
+. // User-specific settings
+. cd C:\ian\git\TwoStagePoisson\simulation
+C:\ian\git\TwoStagePoisson\simulation
+
+. adopath ++ C:\ian\git\TwoStagePoisson\ado
+  [1]              "C:\ian\git\TwoStagePoisson\ado"
+  [2]  (BASE)      "C:\Program Files\StataNow19\ado\base/"
+  [3]  (SITE)      "C:\Program Files\StataNow19\ado\site/"
+  [4]              "."
+  [5]  (PERSONAL)  "c:\ian\ado\personal/"
+  [6]  (PLUS)      "c:\ian\ado\plus/"
+  [7]  (OLDPLACE)  "c:\ado/"
+
+. set scheme mrc
+
+. 
+. // SET UP DGMS
+. prog drop _all
+
+. cap frame create simrun_settings
+
+. frame change simrun_settings
+
+. clear 
+
+. makegrid tau, values(0 0.3)
+(2 observations created)
+
+. makegrid gamma, values(-6 -5 -4)
+(4 observations created)
+
+. makegrid aratio, values(1 2)
+(6 observations created)
+
+. makegrid studies, values(5 20)
+(12 observations created)
+
+. gen bx = .4 
+
+. gen beta = -0.3
+
+. gen cens = 5
+
+. gen nobslow = 300
+
+. gen nobsupp = 1000
+
+. gen px = .4
+
+. 
+. gen reps = 2000
+
+. gen seed = 42
+
+. gsort studies -tau gamma aratio // start with k=5 (faster), and tau=0.3 (more problematic)
+
+. 
+. * load the simulation program
+. do twoSPsimprog
+
+. /*
+> Simulation study to evaluate two-stage Poisson (2SP) method for meta-analysis of TTE data
+> Simulation definition program (see twoSPsimrun for the main program)
+> IW 10sep2025
+> v0.2 IW 17sep2025
+> 19sep2025: 1SC now stratifies, not adjusts (faster)
+> 1oct2025: two programs, for revised simrun
+> */
+. cap program drop twoSPsimgen
+
+. cap program drop twoSPsimana
+
+. 
+. program define twoSPsimgen, rclass
+  1. 
+. // FOR SIMRUN
+. local inputs studies nobslow nobsupp px aratio gamma bx beta tau cens
+  2. if "`0'"=="?" {
+  3.         return local inputs `inputs'
+  4.         exit
+  5. }
+  6. 
+. // GENERATE THE DATA
+. version 14
+  7. syntax, studies(int) nobslow(int) nobsupp(int) px(real) aratio(real) gamma(real) bx(real) beta(re
+> al) tau(real) cens(real)
+  8. assert `studies'>1
+  9. assert inrange(`px',0,1)
+ 10. assert `aratio'>0
+ 11. clear
+ 12. qui set obs `studies'
+ 13. gen study = _n
+ 14. gen nobs = runiformint(`nobslow',`nobsupp')
+ 15. gen bz = rnormal(`beta',`tau')
+ 16. qui expand nobs
+ 17. drop nobs
+ 18. sort study
+ 19. by study: gen id = _n
+ 20. gen x = runiform()<`px'
+ 21. gen z = runiform()>1/(1+`aratio')
+ 22. gen t = -log(runiform())/exp(`gamma'+`bx'*x+bz*z)
+ 23. gen d = t<=`cens'
+ 24. qui replace t = `cens' if !d
+ 25. drop bz
+ 26. stset t, failure(d)
+ 27. 
+. * Form 2-stage data
+. byvar study, b(z) se(z) generate unique: stcox z x
+ 28. rename Bz_ b
+ 29. rename Sz_ se
+ 30. assert mi(b)==(id>1)
+ 31. egen d1 = sum(d*z), by(study)
+ 32. egen d0 = sum(d*(1-z)), by(study)
+ 33. egen p1 = sum(t*z), by(study)
+ 34. egen p0 = sum(t*(1-z)), by(study)
+ 35. foreach var of varlist d? p? {
+ 36.         qui replace `var' = . if id>1
+ 37. }
+ 38. * handle single-zero studies
+. qui replace b = ln(d1+.5)-ln(p1)-ln(d0+.5)+ln(p0) if min(d0,d1)==0 
+ 39. qui replace se = sqrt( 1/(d1+.5) + 1/(d0+.5) )    if min(d0,d1)==0
+ 40. * handle double-zero studies
+. qui replace b = . if max(d0,d1)==0
+ 41. qui replace se = . if max(d0,d1)==0
+ 42. 
+. end
+
+. 
+. /************** end of twoSPsimgen ******************/
+. 
+. /************** start of twoSPsimana ******************/
+. 
+. prog def twoSPsimana, rclass
+  1. 
+. * descriptive outputs
+. local outputs n d singlezeroes doublezeroes sdb sdbw
+  2. * analysis outputs
+. foreach method in 1SC 2SN 2SPU 2SPW 2SN_REML 2SN_ML 2SPU_ML 2SPW_ML 2SPU_MLc 2SPW_MLc {
+  3.         local outputs `outputs' b`method' s`method' tau`method' error`method' 
+  4. }
+  5. if "`0'"=="?" {
+  6.         return local outputs `outputs'
+  7.         exit
+  8. }
+  9. 
+. // DESCRIPTIVE STATISTICS
+. sum d, meanonly
+ 10. local n=r(N)
+ 11. local d=r(sum)
+ 12. qui count if d0==0 & d1==0 & id==1
+ 13. local doublezeroes = r(N)
+ 14. qui count if (d0==0 | d1==0) & id==1
+ 15. local singlezeroes = r(N)-`doublezeroes'
+ 16. * var(b)
+. qui sum b
+ 17. local sdb = r(sd)
+ 18. qui sum b [w=1/se^2]
+ 19. local sdbw = r(sd)
+ 20. 
+. // ANALYSE THE DATA
+. * Method 1: one-stage Cox
+. timer on 1
+ 21. cap stcox z x, strata(study)
+ 22. timer off 1
+ 23. if _rc==1 exit 1
+ 24. if _rc==0 {
+ 25.         local method 1SC
+ 26.         local b`method' = _b[z]
+ 27.         local s`method' = _se[z]
+ 28.         local tau`method' = 0
+ 29.         local error`method' = !e(converged)
+ 30. }
+ 31. 
+. * reduce to two-stage data
+. keep if id==1
+ 32. 
+. * CE Method 2: 2-stage Normal
+. timer on 2
+ 33. cap metan b se, nograph model(iv)
+ 34. timer off 2
+ 35. if _rc==1 exit 1
+ 36. if _rc==0 {
+ 37.         local method 2SN
+ 38.         local b`method' = r(eff)
+ 39.         local s`method' = r(se_eff)
+ 40.         local tau`method' = 0
+ 41.         local error`method' = 0
+ 42. }
+ 43. 
+. * CE method 3: 2-stage Poisson, unweighted
+. timer on 3
+ 44. cap meta2p b se, d(d1 d0) py(p1 p0) study(study)
+ 45. timer off 3
+ 46. if _rc==1 exit 1
+ 47. if _rc==0 {
+ 48.         local method 2SPU
+ 49.         local b`method' = r(eff)
+ 50.         local s`method' = r(se_eff)
+ 51.         local tau`method' = 0
+ 52.         local error`method' = r(error)
+ 53. }
+ 54. 
+. * CE method 4: 2-stage Poisson, weighted
+. timer on 4
+ 55. cap meta2p b se, d(d1 d0) py(p1 p0) study(study) wt
+ 56. timer off 4
+ 57. if _rc==1 exit 1
+ 58. if _rc==0 {
+ 59.         local method 2SPW
+ 60.         local b`method' = r(eff)
+ 61.         local s`method' = r(se_eff)
+ 62.         local tau`method' = 0
+ 63.         local error`method' = r(error)
+ 64. }
+ 65. 
+. * RE Method 5: 2-stage Normal, REML
+. timer on 5
+ 66. cap metan b se, nograph model(reml)
+ 67. timer off 5
+ 68. if _rc==1 exit 1
+ 69. if _rc==0 {
+ 70.         local method 2SN_REML
+ 71.         local b`method' = r(eff)
+ 72.         local s`method' = r(se_eff)
+ 73.         local tau`method' = sqrt(r(tausq))
+ 74.         local error`method' = 0
+ 75. }
+ 76. 
+. * RE Method 6: 2-stage Normal, ML
+. timer on 6
+ 77. cap metan b se, nograph model(ml)
+ 78. timer off 6
+ 79. if _rc==1 exit 1
+ 80. if _rc==0 {
+ 81.         local method 2SN_ML
+ 82.         local b`method' = r(eff)
+ 83.         local s`method' = r(se_eff)
+ 84.         local tau`method' = sqrt(r(tausq))
+ 85.         local error`method' = 0
+ 86. }
+ 87. 
+. * RE method 7: 2-stage Poisson, unweighted
+. timer on 7
+ 88. cap meta2p b se, d(d1 d0) py(p1 p0) study(study) re 
+ 89. timer off 7
+ 90. if _rc==1 exit 1
+ 91. if _rc==0 {
+ 92.         local method 2SPU_ML
+ 93.         local b`method' = r(eff)
+ 94.         local s`method' = r(se_eff)
+ 95.         local tau`method' = sqrt(r(tausq))
+ 96.         local error`method' = r(error)
+ 97. }
+ 98. 
+. * RE method 8: 2-stage Poisson, weighted
+. timer on 8
+ 99. cap meta2p b se, d(d1 d0) py(p1 p0) study(study) re wt
+100. timer off 8
+101. if _rc==1 exit 1
+102. if _rc==0 {
+103.         local method 2SPW_ML
+104.         local b`method' = r(eff)
+105.         local s`method' = r(se_eff)
+106.         local tau`method' = sqrt(r(tausq))
+107.         local error`method' = r(error)
+108. }
+109. 
+. * RE method 9: 2-stage Poisson, unweighted, centred
+. timer on 9
+110. cap meta2p b se, d(d1 d0) py(p1 p0) study(study) re centre
+111. timer off 9
+112. if _rc==1 exit 1
+113. if _rc==0 {
+114.         local method 2SPU_MLc
+115.         local b`method' = r(eff)
+116.         local s`method' = r(se_eff)
+117.         local tau`method' = sqrt(r(tausq))
+118.         local error`method' = r(error)
+119. }
+120. 
+. * RE method 10: 2-stage Poisson, weighted, centred
+. timer on 10
+121. cap meta2p b se, d(d1 d0) py(p1 p0) study(study) re wt centre
+122. timer off 10
+123. if _rc==1 exit 1
+124. if _rc==0 {
+125.         local method 2SPW_MLc
+126.         local b`method' = r(eff)
+127.         local s`method' = r(se_eff)
+128.         local tau`method' = sqrt(r(tausq))
+129.         local error`method' = r(error)
+130. }
+131. 
+. foreach output of local outputs {
+132.         if !mi("``output''") return scalar `output' = ``output''
+133.         else return scalar `output' = .
+134. }
+135. 
+. end
+
+. 
+. /************** end of twoSPsimana ******************/
+. 
+. 
+end of do-file
+
+. 
+. simsetup, name(twoSPsimprog) prog(twoSPsimgen twoSPsimana)
+
+. timer clear
+
+. simrun, append
+Current state of simulation:
+
+     +----------------------------------------------------------------------------------------------+
+     | studies   nobslow   nobsupp   px   aratio   gamma   bx   beta   tau   cens   reps   donereps |
+     |----------------------------------------------------------------------------------------------|
+  1. |       5       300      1000   .4        1      -6   .4    -.3    .3      5   2000       2000 |
+  2. |       5       300      1000   .4        2      -6   .4    -.3    .3      5   2000       2000 |
+  3. |       5       300      1000   .4        1      -5   .4    -.3    .3      5   2000       2000 |
+  4. |       5       300      1000   .4        2      -5   .4    -.3    .3      5   2000       2000 |
+  5. |       5       300      1000   .4        1      -4   .4    -.3    .3      5   2000       2000 |
+     |----------------------------------------------------------------------------------------------|
+  6. |       5       300      1000   .4        2      -4   .4    -.3    .3      5   2000       2000 |
+  7. |       5       300      1000   .4        1      -6   .4    -.3     0      5   2000       2000 |
+  8. |       5       300      1000   .4        2      -6   .4    -.3     0      5   2000       2000 |
+  9. |       5       300      1000   .4        1      -5   .4    -.3     0      5   2000       2000 |
+ 10. |       5       300      1000   .4        2      -5   .4    -.3     0      5   2000       2000 |
+     |----------------------------------------------------------------------------------------------|
+ 11. |       5       300      1000   .4        1      -4   .4    -.3     0      5   2000       2000 |
+ 12. |       5       300      1000   .4        2      -4   .4    -.3     0      5   2000       2000 |
+ 13. |      20       300      1000   .4        1      -6   .4    -.3    .3      5   2000       2000 |
+ 14. |      20       300      1000   .4        2      -6   .4    -.3    .3      5   2000       2000 |
+ 15. |      20       300      1000   .4        1      -5   .4    -.3    .3      5   2000       2000 |
+     |----------------------------------------------------------------------------------------------|
+ 16. |      20       300      1000   .4        2      -5   .4    -.3    .3      5   2000       2000 |
+ 17. |      20       300      1000   .4        1      -4   .4    -.3    .3      5   2000       2000 |
+ 18. |      20       300      1000   .4        2      -4   .4    -.3    .3      5   2000       2000 |
+ 19. |      20       300      1000   .4        1      -6   .4    -.3     0      5   2000       2000 |
+ 20. |      20       300      1000   .4        2      -6   .4    -.3     0      5   2000       2000 |
+     |----------------------------------------------------------------------------------------------|
+ 21. |      20       300      1000   .4        1      -5   .4    -.3     0      5   2000       2000 |
+ 22. |      20       300      1000   .4        2      -5   .4    -.3     0      5   2000       2000 |
+ 23. |      20       300      1000   .4        1      -4   .4    -.3     0      5   2000       2000 |
+ 24. |      20       300      1000   .4        2      -4   .4    -.3     0      5   2000       2000 |
+     +----------------------------------------------------------------------------------------------+
+Nothing to do
+
+. timer list
+
+. 
+. 
+. 
+end of do-file
+
+. simcombine, settings(simrun_settings)
+Reading 24 files........................
+Results loaded into current frame simrun_results
+
+. drop nobslow nobsupp px bx beta cens
+
+. isid studies aratio gamma tau rep
+
+. sort studies aratio gamma tau rep
+
+. su b*
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+        b1SC |     48,000   -.2799451    .2052547  -1.948192   1.771473
+        b2SN |     48,000   -.2837204    .1907422  -1.467679   1.443675
+       b2SPU |     48,000   -.2801357    .2055118  -1.941125   1.765184
+       b2SPW |     48,000   -.2801159    .2055557  -1.941132   1.765276
+   b2SN_REML |     48,000   -.2883131    .1925626  -1.467679   1.443675
+-------------+---------------------------------------------------------
+     b2SN_ML |     48,000   -.2875075    .1914985  -1.467679   1.443675
+    b2SPU_ML |     47,535   -.2854151    .2080925  -1.940802   1.765184
+    b2SPW_ML |     47,588   -.2853032    .2081274  -1.941132   1.765276
+   b2SPU_MLc |     47,793   -.2831171    .2065565  -1.941125   1.765158
+   b2SPW_MLc |     47,803    -.283132    .2066991  -1.941132   1.765276
+
+. * b1SC b2SN b2SPU b2SPW b2SN_REML b2SN_ML b2SPU_ML b2SPW_ML b2SPU_MLc b2SPW_MLc
+. recast double studies aratio gamma tau, force
+
+. replace tau = round(tau,1E-3)
+(24,000 real changes made)
+
+. save z1, replace
+file z1.dta saved
+
+. 
+. cf studies-error1SC using z2
+
+. 
+. 
+. // Merge the two data sets
+. use z2, clear
+
+. drop *1SC
+
+. merge 1:1 studies aratio gamma tau rep using z1
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                             0
+    Matched                            48,000  (_merge==3)
+    -----------------------------------------
+
+. assert _merge==3
+
+. drop _merge
+
+. 
+. label data "Combined results from twoSPsimrun and twoSPsimrun2"
+
+. save twoSPcombine, replace
+file twoSPcombine.dta saved
+
+. 
+. erase z1.dta
+
+. erase z2.dta
+
+. 
+end of do-file
+      name:  <unnamed>
+       log:  C:\ian\git\TwoStagePoisson\simulation\twoSPcombine.log
+  log type:  text
+ closed on:  26 Mar 2026, 11:55:28
+------------------------------------------------------------------------------------------------------
