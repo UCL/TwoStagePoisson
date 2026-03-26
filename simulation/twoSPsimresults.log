@@ -1,0 +1,958 @@
+---------------------------------------------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  C:\ian\git\TwoStagePoisson\simulation\twoSPsimresults.log
+  log type:  text
+ opened on:  26 Mar 2026, 14:57:08
+
+. /*
+> twoSPsimresults.do
+> Simulation study to evaluate two-stage Poisson (2SP) method for meta-analysis of TTE data
+> Main results
+> */
+. 
+. // DESCRIPTIVE
+. use twoSPcombine, clear 
+(Combined results from twoSPsimrun and twoSPsimrun2)
+
+. foreach var in d n singlezeroes doublezeroes {
+  2.         replace `var'=`var'/studies
+  3. }
+(48,000 real changes made)
+(48,000 real changes made)
+(9,397 real changes made)
+(541 real changes made)
+
+. foreach var in singlezeroes doublezeroes {
+  2.         replace `var'=100*`var'
+  3. }
+(9,397 real changes made)
+(541 real changes made)
+
+. summ d n singlezeroes doublezeroes 
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+           d |     48,000    29.52993    21.60093        2.2         94
+           n |     48,000    651.0702    71.20509        384      915.2
+singlezeroes |     48,000    2.616563    6.583188          0         80
+doublezeroes |     48,000    .0865625    1.010532          0         20
+
+. collapse (mean) d single doublez, by(gamma tau aratio)
+
+. order gamma tau aratio
+
+. format d %6.0f
+
+. format *zeroes %6.1f
+
+. l, noo clean abb(20)
+
+    gamma   tau   aratio    d   singlezeroes   doublezeroes  
+       -6     0        1    8            6.5            0.2  
+       -6     0        2    8            7.9            0.2  
+       -6    .3        1    8            7.4            0.2  
+       -6    .3        2    8            8.7            0.3  
+       -5     0        1   22            0.1            0.0  
+       -5     0        2   21            0.2            0.0  
+       -5    .3        1   23            0.3            0.0  
+       -5    .3        2   22            0.3            0.0  
+       -4     0        1   59            0.0            0.0  
+       -4     0        2   56            0.0            0.0  
+       -4    .3        1   60            0.0            0.0  
+       -4    .3        2   58            0.0            0.0  
+
+. 
+. 
+. // NON-CONVERGENCE
+. use twoSPcombine, clear
+(Combined results from twoSPsimrun and twoSPsimrun2)
+
+. mvpatterns b1*
+variables with no mv's: b1SCoxi b1SCox
+
+Variable     | type     obs   mv   variable label
+-------------+-----------------------------------
+b1SWei       | float  47949   51   
+b1SWei_REu   | float  47982   18   
+b1SWei_REc   | float  47954   46   
+-------------------------------------------------
+
+Patterns of missing values
+
+  +------------------------+
+  | _pattern   _mv   _freq |
+  |------------------------|
+  |      +++     0   47885 |
+  |      .++     1      51 |
+  |      ++.     1      46 |
+  |      +.+     1      18 |
+  +------------------------+
+
+. mvpatterns b2*
+variables with no mv's: b2SN b2SPU b2SPW b2SN_RE
+
+Variable     | type     obs   mv   variable label
+-------------+-----------------------------------
+b2SPU_REu    | float  47535  465   
+b2SPW_REu    | float  47588  412   
+b2SPU_REc    | float  47793  207   
+b2SPW_REc    | float  47803  197   
+-------------------------------------------------
+
+Patterns of missing values
+
+  +------------------------+
+  | _pattern   _mv   _freq |
+  |------------------------|
+  |     ++++     0   46750 |
+  |     .+++     1     442 |
+  |     +.++     1     389 |
+  |     ++.+     1     198 |
+  |     +++.     1     190 |
+  |------------------------|
+  |     ..++     2      21 |
+  |     ++..     2       6 |
+  |     +..+     2       2 |
+  |     .++.     2       1 |
+  |     .+.+     2       1 |
+  +------------------------+
+
+. 
+. 
+. // COMPARE 1SC METHODS
+. use twoSPcombine, clear
+(Combined results from twoSPsimrun and twoSPsimrun2)
+
+. gen absdiff=abs(b1SWei - b1SCox)
+(51 missing values generated)
+
+. su absdiff
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+     absdiff |     47,949    .0004406    .0003648   2.98e-08   .0038844
+
+. * 1SWei and 1SC never differ by more than 0.004
+. 
+. drop error* tau?*
+
+. siman setup, dgm(aratio gamma studies tau) rep(rep) est(b) se(s) method(1SCox 1SCoxi 1SWei) true(beta)
+Warning: siman setup found unwanted variables: n d singlezeroes doublezeroes sdb sdbw b1SWei_REu s1SWei_REu
+  b1SWei_REc s1SWei_REc b2SN s2SN b2SPU s2SPU b2SPW s2SPW b2SN_RE s2SN_RE b2SPU_REu s2SPU_REu b2SPW_REu s2SPW_REu
+  b2SPU_REc s2SPU_REc b2SPW_REc s2SPW_REc absdiff
+
+                   SUMMARY OF DATA
+_____________________________________________________
+
+Data-generating mechanism (DGM)
+  DGM variables (# levels):       aratio (2) gamma (3) studies (2) tau (2) 
+  Total number of DGMs:           24
+
+Targets
+  Variable containing targets:    -
+  Number of targets:              1
+  Target values:                  
+
+Methods
+  Variable containing methods:    method
+  Number of methods:              3
+  Method values:                  1SCox; 1SCoxi; 1SWei
+
+Repetition-level output
+  Point estimate variable:        b
+  SE variable:                    s
+  df variable:                    -
+  Conf. limit variables:          -
+  p-value variable:               -
+  True value variable:            beta
+
+Estimates data                    in data
+Performance statistics            not in data
+_____________________________________________________
+
+. siman ana, max(15)
+siman analyse has run successfully
+
+. siman nes pctbias modelse, ///
+>         legend(pos(3) col(1)) stagger(.05) $PPT ///
+>         dglabsize(small) lw(*2 = = =) dglwidth(*2) ///
+>         lcol(black green purple) lpat(solid = =) ///
+>         name(compare1SC,replace)
+siman nestloop will draw 2 graphs (1 targets * 2 performance measures)
+
+. * the 3 methods have indistinguishable bias and modelSE
+. table studies method if rep==-4, stat(min s) stat(max s)
+
+--------------------------------------------------------------
+                  |                    method                 
+                  |     1SCox     1SCoxi      1SWei      Total
+------------------+-------------------------------------------
+studies           |                                           
+  5               |                                           
+    Minimum value |  .8950903   .8965821    .895924   .8950903
+    Maximum value |  2.848114   2.848119   2.843098   2.848119
+  20              |                                           
+    Minimum value |  .4460117   .4466073   .4464405   .4460117
+    Maximum value |  1.296975   1.299958   1.300155   1.300155
+  Total           |                                           
+    Minimum value |  .4460117   .4466073   .4464405   .4460117
+    Maximum value |  2.848114   2.848119   2.843098   2.848119
+--------------------------------------------------------------
+
+. table studies method if rep==-6, stat(min s) stat(max s)
+
+--------------------------------------------------------------
+                  |                    method                 
+                  |     1SCox     1SCoxi      1SWei      Total
+------------------+-------------------------------------------
+studies           |                                           
+  5               |                                           
+    Minimum value |  .0018992   .0019024    .001901   .0018992
+    Maximum value |  .0060433   .0060433   .0060326   .0060433
+  20              |                                           
+    Minimum value |  .0009464   .0009476   .0009473   .0009464
+    Maximum value |   .002752   .0027583   .0027587   .0027587
+  Total           |                                           
+    Minimum value |  .0009464   .0009476   .0009473   .0009464
+    Maximum value |  .0060433   .0060433   .0060326   .0060433
+--------------------------------------------------------------
+
+. 
+. 
+. // COMPARE UNWEIGHTED AND WEIGHTED 2SP METHODS
+. use twoSPcombine, clear
+(Combined results from twoSPsimrun and twoSPsimrun2)
+
+. drop error* tau?*
+
+. siman setup, dgm(aratio gamma studies tau) rep(rep) est(b) se(s) method(2SPU 2SPW 2SPU_REc 2SPW_REc) true(beta)
+Warning: siman setup found unwanted variables: n d singlezeroes doublezeroes sdb sdbw b1SCoxi s1SCoxi b1SWei s1SWei
+  b1SWei_REu s1SWei_REu b1SWei_REc s1SWei_REc b1SCox s1SCox b2SN s2SN b2SN_RE s2SN_RE b2SPU_REu s2SPU_REu b2SPW_REu
+  s2SPW_REu
+
+                   SUMMARY OF DATA
+_____________________________________________________
+
+Data-generating mechanism (DGM)
+  DGM variables (# levels):       aratio (2) gamma (3) studies (2) tau (2) 
+  Total number of DGMs:           24
+
+Targets
+  Variable containing targets:    -
+  Number of targets:              1
+  Target values:                  
+
+Methods
+  Variable containing methods:    method
+  Number of methods:              4
+  Method values:                  2SPU; 2SPW; 2SPU_REc; 2SPW_REc
+
+Repetition-level output
+  Point estimate variable:        b
+  SE variable:                    s
+  df variable:                    -
+  Conf. limit variables:          -
+  p-value variable:               -
+  True value variable:            beta
+
+Estimates data                    in data
+Performance statistics            not in data
+_____________________________________________________
+
+. siman ana
+siman analyse has run successfully
+
+. siman nes pctbias modelse ///
+>         if inlist(method,"2SPU":methodlabel,"2SPW":methodlabel), ///
+>         legend(pos(3) col(1)) stagger(.05) $PPT ///
+>         dglabsize(small) lw(*2 = = =) dglwidth(*2) ///
+>         lcol(red =) lpat(solid dash) ///
+>         name(weightingCE,replace)
+siman nestloop will draw 2 graphs (1 targets * 2 performance measures)
+
+. siman nes pctbias modelse ///
+>         if inlist(method,"2SPU_REc":methodlabel,"2SPW_REc":methodlabel), ///
+>         legend(pos(3) col(1)) stagger(.05) $PPT ///
+>         dglabsize(small) lw(*2 = = =) dglwidth(*2) ///
+>         lcol(red =) lpat(solid dash) ///
+>         name(weightingRE,replace)
+siman nestloop will draw 2 graphs (1 targets * 2 performance measures)
+
+. table gamma studies if rep<0 & _perf=="pctbias", stat(max s) stat(min s) nformat(%6.3f)
+
+------------------------------------------
+                  |         studies       
+                  |      5      20   Total
+------------------+-----------------------
+gamma             |                       
+  -6              |                       
+    Maximum value |  2.909   1.322   2.909
+    Minimum value |  2.509   1.175   1.175
+  -5              |                       
+    Maximum value |  1.861   0.906   1.861
+    Minimum value |  1.490   0.725   0.725
+  -4              |                       
+    Maximum value |  1.438   0.697   1.438
+    Minimum value |  0.897   0.447   0.447
+  Total           |                       
+    Maximum value |  2.909   1.322   2.909
+    Minimum value |  0.897   0.447   0.447
+------------------------------------------
+
+. * pctbias: Monte Carlo error varies from 0.9 to 2.7 with 5 studies and from 0.4 to 1.3 with 20 studies
+. * modelse: Monte Carlo error < 0.003
+. 
+. 
+. // COMPARE UNCENTRED AND CENTRED METHODS
+. use twoSPcombine, clear
+(Combined results from twoSPsimrun and twoSPsimrun2)
+
+. drop error* tau?*
+
+. siman setup, dgm(aratio gamma studies tau) rep(rep) est(b) se(s) method(1SWei_REc 1SWei_REu 2SPU_REc 2SPU_REu) true
+> (beta)
+Warning: siman setup found unwanted variables: n d singlezeroes doublezeroes sdb sdbw b1SCoxi s1SCoxi b1SWei s1SWei
+  b1SCox s1SCox b2SN s2SN b2SPU s2SPU b2SPW s2SPW b2SN_RE s2SN_RE b2SPW_REu s2SPW_REu b2SPW_REc s2SPW_REc
+
+                   SUMMARY OF DATA
+_____________________________________________________
+
+Data-generating mechanism (DGM)
+  DGM variables (# levels):       aratio (2) gamma (3) studies (2) tau (2) 
+  Total number of DGMs:           24
+
+Targets
+  Variable containing targets:    -
+  Number of targets:              1
+  Target values:                  
+
+Methods
+  Variable containing methods:    method
+  Number of methods:              4
+  Method values:                  1SWei_REc; 1SWei_REu; 2SPU_REc; 2SPU_REu
+
+Repetition-level output
+  Point estimate variable:        b
+  SE variable:                    s
+  df variable:                    -
+  Conf. limit variables:          -
+  p-value variable:               -
+  True value variable:            beta
+
+Estimates data                    in data
+Performance statistics            not in data
+_____________________________________________________
+
+. siman ana
+siman analyse has run successfully
+
+. siman nes pctbias cover ///
+>         if inlist(method,"1SWei_REu":methodlabel,"1SWei_REc":methodlabel), ///
+>         legend(pos(3) col(1)) stagger(.05) $PPT ///
+>         dglabsize(small) lw(*2 = = =) dglwidth(*2) ///
+>         lcol(black =) lpat(solid dash) ///
+>         name(centring1SWei,replace)
+siman nestloop will draw 2 graphs (1 targets * 2 performance measures)
+
+. siman nes pctbias cover ///
+>         if inlist(method,"2SPU_REu":methodlabel,"2SPU_REc":methodlabel), ///
+>         legend(pos(3) col(1)) stagger(.05) $PPT ///
+>         dglabsize(small) lw(*2 = = =) dglwidth(*2) ///
+>         lcol(red =) lpat(solid dash) ///
+>         name(centring2SPU,replace)
+siman nestloop will draw 2 graphs (1 targets * 2 performance measures)
+
+. table studies method if rep==-4, stat(min s) stat(max s)
+
+---------------------------------------------------------------------------
+                  |                          method                        
+                  |  1SWei_REc   1SWei_REu   2SPU_REc   2SPU_REu      Total
+------------------+--------------------------------------------------------
+studies           |                                                        
+  5               |                                                        
+    Minimum value |   .8972858    .8984234   .9017511   .9037951   .8972858
+    Maximum value |   2.905633    2.901502   2.903346    2.91096    2.91096
+  20              |                                                        
+    Minimum value |   .4476406    .4462549   .4481794   .4489251   .4462549
+    Maximum value |   1.315204    1.302303   1.319397   1.307058   1.319397
+  Total           |                                                        
+    Minimum value |   .4476406    .4462549   .4481794   .4489251   .4462549
+    Maximum value |   2.905633    2.901502   2.903346    2.91096    2.91096
+---------------------------------------------------------------------------
+
+. * pctbias: Monte Carlo error varies from 0.9 to 2.9 with 5 studies and from 0.4 to 1.3 with 20 studies
+. table studies method if rep==-13, stat(min s) stat(max s)
+
+---------------------------------------------------------------------------
+                  |                          method                        
+                  |  1SWei_REc   1SWei_REu   2SPU_REc   2SPU_REu      Total
+------------------+--------------------------------------------------------
+studies           |                                                        
+  5               |                                                        
+    Minimum value |    .435544    .4461877   .4243731   .4433879   .4243731
+    Maximum value |   .7462801    .8607653    .741339   .8646815   .8646815
+  20              |                                                        
+    Minimum value |   .4512959    .4826956   .4622193   .4910754   .4512959
+    Maximum value |   .6261542     .884897   .6241935    .888263    .888263
+  Total           |                                                        
+    Minimum value |    .435544    .4461877   .4243731   .4433879   .4243731
+    Maximum value |   .7462801     .884897    .741339    .888263    .888263
+---------------------------------------------------------------------------
+
+. * cover: Monte Carlo error varies from 0.4 to 0.9%.
+. 
+. 
+. // SCATTER PLOT OF DIFFERENCES FROM 1SC: HOM, CE METHODS
+. use twoSPcombine, clear
+(Combined results from twoSPsimrun and twoSPsimrun2)
+
+. drop error* tau1* tau2* s1* s2*
+
+. foreach method in 2SN 2SPU {
+  2.         gen e`method' = b`method' - b1SCox
+  3. }
+
+. reshape long e, i(studies aratio gamma tau rep) j(method) string
+(j = 2SN 2SPU)
+
+Data                               Wide   ->   Long
+-----------------------------------------------------------------------------
+Number of observations           48,000   ->   96,000      
+Number of variables                  27   ->   27          
+j variable (2 values)                     ->   method
+xij variables:
+                             e2SN e2SPU   ->   e
+-----------------------------------------------------------------------------
+
+. label var e "Difference from 1-stage Cox"
+
+. label var b1SCox "1-stage Cox"
+
+. egen emean = mean(e), by(aratio method)
+
+. gen zero=0
+
+. recast double tau
+
+. replace tau = round(tau,.1)
+(48,000 real changes made)
+
+. keep if studies==5 & tau==0
+(72,000 observations deleted)
+
+. *scatter e b1SC, mcol(blue) || line emean zero b1SC, lcol(blue black) by(method aratio gamma, legend(off) col(3) no
+> te("") t2title(gamma=-6                  gamma=-5                  gamma=-4)) ytitle("      2-stage Poisson        
+>            2-stage Normal" "     aratio=2        aratio=1        aratio=2        aratio=1") subtitle("")
+. scatter e b1SCox, mcol(blue) || line emean zero b1SCox, lcol(blue black) by(method gamma aratio, legend(off) col(6)
+>  note("") t2title("gamma=-6                                      gamma=-5                                      gamm
+> a=-4" "aratio=1                aratio=2                aratio=1                aratio=2                aratio=1    
+>             aratio=2")) ytitle("    log HR, 2-stage Poisson      log HR, 2-stage Normal") xsize(9) ysize(5) subtitl
+> e("") name(discrep_ref,replace) xtitle("log HR, 1-stage Cox")
+
+. 
+. replace method = "2-stage Normal" if method=="2SN"
+variable method was str4 now str14
+(12,000 real changes made)
+
+. replace method = "2-stage Poisson" if method=="2SPU"
+variable method was str14 now str15
+(12,000 real changes made)
+
+. label var sdb "Standard deviation of point estimates"
+
+. scatter e sdb if gamma==-6 & aratio==1, by(method, legend(off) note("")) $PPT name(discrep_sd,replace)
+
+. scatter e sdbw if gamma==-6 & aratio==1, by(method, legend(off) note("")) $PPT name(discrep_sdw,replace)
+
+. 
+. * compare discriminatory ability of sdb and sdbw
+. gen discrep = abs(e)>=0.05 if !mi(e)
+
+. roccomp discrep sdb sdbw, graph name(roccomp,replace) summary plot1opts(ms(i)) plot2(ms(i))
+
+                              ROC                     Asymptotic normal
+                   Obs       area     Std. err.      [95% conf. interval]
+-------------------------------------------------------------------------
+sdb             24,000     0.9013       0.0024        0.89667     0.90596
+sdbw            24,000     0.8863       0.0026        0.88108     0.89144
+-------------------------------------------------------------------------
+H0: area(sdb) = area(sdbw)
+    chi2(1) =    89.56       Prob>chi2 =   0.0000
+
+. 
+. 
+. // ANALYSE ESTIMATES OF MU
+. use twoSPcombine, clear
+(Combined results from twoSPsimrun and twoSPsimrun2)
+
+. drop error* tau?*
+
+. * drop all 2SP weighted
+. drop b2SPW* s2SPW*
+
+. * drop all 2SP ML uncentred
+. drop b2SPU_REu s2SPU_REu
+
+. siman setup, dgm(aratio gamma studies tau) rep(rep) est(b) se(s) ///
+>         method(1SCox 2SN 2SPU 1SWei_REc 2SN_RE 2SPU_REc) true(beta)
+Warning: siman setup found unwanted variables: n d singlezeroes doublezeroes sdb sdbw b1SCoxi s1SCoxi b1SWei s1SWei
+  b1SWei_REu s1SWei_REu
+
+                   SUMMARY OF DATA
+_____________________________________________________
+
+Data-generating mechanism (DGM)
+  DGM variables (# levels):       aratio (2) gamma (3) studies (2) tau (2) 
+  Total number of DGMs:           24
+
+Targets
+  Variable containing targets:    -
+  Number of targets:              1
+  Target values:                  
+
+Methods
+  Variable containing methods:    method
+  Number of methods:              6
+  Method values:                  1SCox; 2SN; 2SPU; 1SWei_REc; 2SN_RE; 2SPU_REc
+
+Repetition-level output
+  Point estimate variable:        b
+  SE variable:                    s
+  df variable:                    -
+  Conf. limit variables:          -
+  p-value variable:               -
+  True value variable:            beta
+
+Estimates data                    in data
+Performance statistics            not in data
+_____________________________________________________
+
+. siman ana
+siman analyse has run successfully
+
+. 
+. * bias & power, homogeneous & CE methods
+. siman tab pctbias empse cover power if tau==0 & method<=3, col(method gamma studies) row(_perf aratio) nformat(%6.1
+> f)
+
+--------------------------------------------------------------------------------------------------------------------------------------------------
+                    |                                                             method                                                          
+                    |                   1SCox                                      2SN                                       2SPU                 
+                    |                   gamma                                     gamma                                     gamma                 
+                    |       -6            -5            -4            -6            -5            -4            -6            -5            -4    
+                    |    studies       studies       studies       studies       studies       studies       studies       studies       studies  
+                    |     5     20      5     20      5     20      5     20      5     20      5     20      5     20      5     20      5     20
+--------------------+-----------------------------------------------------------------------------------------------------------------------------
+Performance measure |                                                                                                                             
+  Pctbias           |                                                                                                                             
+    aratio          |                                                                                                                             
+      1             |                                                                                                                             
+        Estimate    |   1.4    3.0   -2.0    0.5   -0.8    0.2   -9.9   -9.1   -5.8   -4.0   -2.1   -1.3    1.6    3.0   -2.0    0.6   -0.7    0.3
+        MCSE        |   2.5    1.2    1.5    0.7    0.9    0.4    2.3    1.1    1.4    0.7    0.9    0.4    2.5    1.2    1.5    0.7    0.9    0.4
+      2             |                                                                                                                             
+        Estimate    |  -4.1    2.7   -4.1    0.1   -1.7    0.2   11.9   18.9    2.3    6.9    0.5    2.7   -4.0    2.7   -4.1    0.2   -1.7    0.2
+        MCSE        |   2.7    1.2    1.5    0.8    0.9    0.5    2.4    1.1    1.4    0.7    0.9    0.5    2.7    1.2    1.5    0.8    0.9    0.5
+  Empse             |                                                                                                                             
+    aratio          |                                                                                                                             
+      1             |                                                                                                                             
+        Estimate    |   0.3    0.2    0.2    0.1    0.1    0.1    0.3    0.1    0.2    0.1    0.1    0.1    0.3    0.2    0.2    0.1    0.1    0.1
+        MCSE        |   0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0
+      2             |                                                                                                                             
+        Estimate    |   0.4    0.2    0.2    0.1    0.1    0.1    0.3    0.1    0.2    0.1    0.1    0.1    0.4    0.2    0.2    0.1    0.1    0.1
+        MCSE        |   0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0
+  Cover             |                                                                                                                             
+    aratio          |                                                                                                                             
+      1             |                                                                                                                             
+        Estimate    |  95.6   95.1   94.3   94.7   94.6   94.6   97.5   97.7   95.6   96.1   95.2   95.0   95.7   94.9   94.3   94.7   94.7   94.7
+        MCSE        |   0.5    0.5    0.5    0.5    0.5    0.5    0.3    0.3    0.5    0.4    0.5    0.5    0.5    0.5    0.5    0.5    0.5    0.5
+      2             |                                                                                                                             
+        Estimate    |  95.5   95.0   95.1   94.3   95.4   94.2   97.8   96.7   96.3   95.4   95.6   94.3   95.4   94.9   94.9   94.3   95.2   93.9
+        MCSE        |   0.5    0.5    0.5    0.5    0.5    0.5    0.3    0.4    0.4    0.5    0.5    0.5    0.5    0.5    0.5    0.5    0.5    0.5
+  Power             |                                                                                                                             
+    aratio          |                                                                                                                             
+      1             |                                                                                                                             
+        Estimate    |  15.0   50.7   33.5   88.0   70.9   99.8    8.6   34.6   29.3   84.9   69.6   99.8   15.1   50.9   33.5   88.2   70.9   99.8
+        MCSE        |   0.8    1.1    1.1    0.7    1.0    0.1    0.6    1.1    1.0    0.8    1.0    0.1    0.8    1.1    1.1    0.7    1.0    0.1
+      2             |                                                                                                                             
+        Estimate    |  16.3   47.2   32.5   85.4   66.7   99.8   14.6   55.3   33.8   89.6   68.3   99.8   16.1   47.3   32.2   85.2   66.6   99.8
+        MCSE        |   0.8    1.1    1.0    0.8    1.1    0.1    0.8    1.1    1.1    0.7    1.0    0.1    0.8    1.1    1.0    0.8    1.1    0.1
+--------------------------------------------------------------------------------------------------------------------------------------------------
+Note: Coverage and Power calculated at 95% level
+
+. siman nes pctbias empse cover power if tau==0 & method<=3, ///
+>         legend(pos(3) col(1)) stagger(.05) $PPT ///
+>         dglabsize(small) lw(*2 ...) dglwidth(*2) ///
+>         lcol(black blue red =) lpat(solid = = dash) name(homCE,replace)
+siman nestloop will draw 4 graphs (1 targets * 4 performance measures)
+
+. * summarise MCSEs
+. table gamma studies if rep<0 & _perf=="pctbias" & tau==0 & method<=3, stat(max s) stat(min s) nformat(%6.1f)
+
+--------------------------------------
+                  |       studies     
+                  |    5    20   Total
+------------------+-------------------
+gamma             |                   
+  -6              |                   
+    Maximum value |  2.7   1.2     2.7
+    Minimum value |  2.3   1.1     1.1
+  -5              |                   
+    Maximum value |  1.5   0.8     1.5
+    Minimum value |  1.4   0.7     0.7
+  -4              |                   
+    Maximum value |  0.9   0.5     0.9
+    Minimum value |  0.9   0.4     0.4
+  Total           |                   
+    Maximum value |  2.7   1.2     2.7
+    Minimum value |  0.9   0.4     0.4
+--------------------------------------
+
+. * pctbias: MCSE varies from 0.9 to 2.7 with 5 studies and from 0.4 to 1.2 with 20 studies
+. * Empse: MCSE < 0.006
+. * Coverage: MCSE = 0.3 to 0.5%
+. * power: MCSE <= 1.1%
+. 
+. * bias, heterogeneous & RE methods
+. siman tab pctbias empse cover power if tau>0, col(method gamma studies) row(_perf aratio) nformat(%6.1f)
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+> ------------------------------------------------------------------------------------------------------
+                    |                                                                                                                                           method                                  
+>                                                                                                       
+                    |                      1SCox                                            2SN                                             2SPU                                        1SWei_REc       
+>                                 2SN_RE                                       2SPU_REc                 
+                    |                      gamma                                           gamma                                           gamma                                          gamma         
+>                                 gamma                                         gamma                   
+                    |        -6              -5              -4              -6              -5              -4              -6              -5              -4              -6              -5         
+>     -4             -6              -5             -4             -6              -5             -4    
+                    |     studies         studies         studies         studies         studies         studies         studies         studies         studies         studies         studies       
+>  studies        studies         studies        studies        studies         studies        studies  
+                    |      5      20       5      20       5      20       5      20       5      20       5      20       5      20       5      20       5      20       5      20       5      20    
+>   5     20       5      20       5      20      5     20       5      20       5      20      5     20
+--------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+> ------------------------------------------------------------------------------------------------------
+Performance measure |                                                                                                                                                                                   
+>                                                                                                       
+  Pctbias           |                                                                                                                                                                                   
+>                                                                                                       
+    aratio          |                                                                                                                                                                                   
+>                                                                                                       
+      1             |                                                                                                                                                                                   
+>                                                                                                       
+        Estimate    |   -9.2   -14.2   -11.7   -13.5   -10.9   -13.5   -21.8   -27.6   -17.8   -20.2   -13.9   -17.0    -9.1   -14.1   -11.6   -13.4   -10.8   -13.4    -6.3   -11.5    -8.0    -9.3   -
+> 5.6   -6.5   -17.6   -26.1   -11.3   -14.9   -5.8   -7.7    -6.4   -11.6    -8.4    -9.3   -5.7   -6.5
+        MCSE        |    2.7     1.3     1.8     0.9     1.4     0.7     2.4     1.1     1.7     0.8     1.4     0.7     2.7     1.3     1.8     0.9     1.4     0.7     2.7     1.3     1.8     0.9    
+> 1.4    0.7     2.5     1.1     1.7     0.8    1.4    0.7     2.7     1.3     1.8     0.9    1.4    0.7
+      2             |                                                                                                                                                                                   
+>                                                                                                       
+        Estimate    |  -15.3   -16.4   -12.3   -14.4   -11.1   -13.4     1.3     1.6    -4.8    -5.6    -6.9    -8.3   -15.2   -16.4   -12.2   -14.3   -11.1   -13.3   -17.2   -17.9   -10.8   -13.1   -
+> 7.2   -8.4    -0.5     1.2    -4.3    -5.3   -4.0   -5.0   -17.2   -18.2   -10.9   -13.1   -7.2   -8.4
+        MCSE        |    2.8     1.3     1.9     0.9     1.4     0.7     2.5     1.1     1.8     0.8     1.4     0.7     2.8     1.3     1.8     0.9     1.4     0.7     2.9     1.3     1.9     0.9    
+> 1.4    0.7     2.6     1.2     1.8     0.9    1.4    0.7     2.9     1.3     1.9     0.9    1.4    0.7
+  Empse             |                                                                                                                                                                                   
+>                                                                                                       
+    aratio          |                                                                                                                                                                                   
+>                                                                                                       
+      1             |                                                                                                                                                                                   
+>                                                                                                       
+        Estimate    |    0.4     0.2     0.2     0.1     0.2     0.1     0.3     0.2     0.2     0.1     0.2     0.1     0.4     0.2     0.2     0.1     0.2     0.1     0.4     0.2     0.2     0.1    
+> 0.2    0.1     0.3     0.2     0.2     0.1    0.2    0.1     0.4     0.2     0.2     0.1    0.2    0.1
+        MCSE        |    0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0    
+> 0.0    0.0     0.0     0.0     0.0     0.0    0.0    0.0     0.0     0.0     0.0     0.0    0.0    0.0
+      2             |                                                                                                                                                                                   
+>                                                                                                       
+        Estimate    |    0.4     0.2     0.2     0.1     0.2     0.1     0.3     0.2     0.2     0.1     0.2     0.1     0.4     0.2     0.2     0.1     0.2     0.1     0.4     0.2     0.2     0.1    
+> 0.2    0.1     0.3     0.2     0.2     0.1    0.2    0.1     0.4     0.2     0.2     0.1    0.2    0.1
+        MCSE        |    0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0     0.0    
+> 0.0    0.0     0.0     0.0     0.0     0.0    0.0    0.0     0.0     0.0     0.0     0.0    0.0    0.0
+  Cover             |                                                                                                                                                                                   
+>                                                                                                       
+    aratio          |                                                                                                                                                                                   
+>                                                                                                       
+      1             |                                                                                                                                                                                   
+>                                                                                                       
+        Estimate    |   92.7    91.8    88.5    86.8    77.2    73.9    95.8    93.7    90.3    87.7    78.0    73.2    92.9    91.9    88.2    86.7    77.2    73.8    94.0    94.0    91.4    92.5   8
+> 8.0   92.0    96.1    94.6    93.3    92.7   90.5   92.3    94.1    94.2    91.4    92.5   87.9   92.0
+        MCSE        |    0.6     0.6     0.7     0.8     0.9     1.0     0.5     0.5     0.7     0.7     0.9     1.0     0.6     0.6     0.7     0.8     0.9     1.0     0.5     0.5     0.6     0.6    
+> 0.7    0.6     0.4     0.5     0.6     0.6    0.7    0.6     0.5     0.5     0.6     0.6    0.7    0.6
+      2             |                                                                                                                                                                                   
+>                                                                                                       
+        Estimate    |   92.7    92.7    88.1    86.6    78.0    75.7    96.2    97.0    90.7    91.8    80.3    80.2    92.6    92.5    88.1    86.8    77.9    75.9    93.8    94.3    90.9    91.4   8
+> 7.3   91.6    96.3    97.3    93.7    94.3   89.8   93.2    93.9    94.2    91.0    91.7   87.5   91.5
+        MCSE        |    0.6     0.6     0.7     0.8     0.9     1.0     0.4     0.4     0.6     0.6     0.9     0.9     0.6     0.6     0.7     0.8     0.9     1.0     0.5     0.5     0.6     0.6    
+> 0.7    0.6     0.4     0.4     0.5     0.5    0.7    0.6     0.5     0.5     0.6     0.6    0.7    0.6
+  Power             |                                                                                                                                                                                   
+>                                                                                                       
+    aratio          |                                                                                                                                                                                   
+>                                                                                                       
+      1             |                                                                                                                                                                                   
+>                                                                                                       
+        Estimate    |   14.9    39.2    31.0    74.7    58.7    94.8     8.3    22.3    26.4    66.8    56.2    93.8    15.1    39.2    31.0    74.5    58.8    94.7    13.4    34.4    25.2    66.0   4
+> 5.3   89.2     7.9    22.0    20.3    61.2   39.8   87.9    13.4    34.2    25.1    66.0   45.7   89.4
+        MCSE        |    0.8     1.1     1.0     1.0     1.1     0.5     0.6     0.9     1.0     1.1     1.1     0.5     0.8     1.1     1.0     1.0     1.1     0.5     0.8     1.1     1.0     1.1    
+> 1.1    0.7     0.6     0.9     0.9     1.1    1.1    0.7     0.8     1.1     1.0     1.1    1.1    0.7
+      2             |                                                                                                                                                                                   
+>                                                                                                       
+        Estimate    |   16.4    35.7    31.2    70.5    56.3    93.3    13.9    42.1    31.5    77.2    58.3    96.0    16.6    35.5    30.9    70.5    56.4    93.4    13.5    29.4    24.4    59.6   4
+> 3.0   86.2    12.2    40.2    22.8    67.8   39.7   87.8    13.7    28.6    24.3    59.7   42.8   85.9
+        MCSE        |    0.8     1.1     1.0     1.0     1.1     0.6     0.8     1.1     1.0     0.9     1.1     0.4     0.8     1.1     1.0     1.0     1.1     0.6     0.8     1.0     1.0     1.1    
+> 1.1    0.8     0.7     1.1     0.9     1.0    1.1    0.7     0.8     1.0     1.0     1.1    1.1    0.8
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+> ------------------------------------------------------------------------------------------------------
+Note: Coverage and Power calculated at 95% level
+
+. siman nes pctbias empse cover power if tau>0, ///
+>         legend(pos(3) col(1)) stagger(.08) $PPT ///
+>         dglabsize(small) lw(*2 ...) dglwidth(*2) ///
+>         lcol(black blue red black blue red) lpat(solid = = dash = =) ///
+>         name(het,replace)
+siman nestloop will draw 4 graphs (1 targets * 4 performance measures)
+
+. 
+. * summarise MCSEs
+. table gamma studies if _perf=="pctbias" & tau>0, stat(min s) stat(max s) nformat(%6.1f)
+
+--------------------------------------
+                  |       studies     
+                  |    5    20   Total
+------------------+-------------------
+gamma             |                   
+  -6              |                   
+    Minimum value |  2.4   1.1     1.1
+    Maximum value |  2.9   1.3     2.9
+  -5              |                   
+    Minimum value |  1.7   0.8     0.8
+    Maximum value |  1.9   0.9     1.9
+  -4              |                   
+    Minimum value |  1.4   0.7     0.7
+    Maximum value |  1.4   0.7     1.4
+  Total           |                   
+    Minimum value |  1.4   0.7     0.7
+    Maximum value |  2.9   1.3     2.9
+--------------------------------------
+
+. * Pctbias: Monte Carlo error varies from 1.4 to 2.9 with 5 studies and from 0.7 to 1.3 with 20 studies
+. table gamma studies if _perf=="empse" & tau>0, stat(min s) stat(max s) nformat(%6.3f)
+
+------------------------------------------
+                  |         studies       
+                  |      5      20   Total
+------------------+-----------------------
+gamma             |                       
+  -6              |                       
+    Minimum value |  0.005   0.002   0.002
+    Maximum value |  0.006   0.003   0.006
+  -5              |                       
+    Minimum value |  0.004   0.002   0.002
+    Maximum value |  0.004   0.002   0.004
+  -4              |                       
+    Minimum value |  0.003   0.001   0.001
+    Maximum value |  0.003   0.001   0.003
+  Total           |                       
+    Minimum value |  0.003   0.001   0.001
+    Maximum value |  0.006   0.003   0.006
+------------------------------------------
+
+. * Empse: Monte Carlo error < 0.006
+. table gamma studies if _perf=="cover" & tau>0, stat(min s) stat(max s) nformat(%6.1f)
+
+--------------------------------------
+                  |       studies     
+                  |    5    20   Total
+------------------+-------------------
+gamma             |                   
+  -6              |                   
+    Minimum value |  0.4   0.4     0.4
+    Maximum value |  0.6   0.6     0.6
+  -5              |                   
+    Minimum value |  0.5   0.5     0.5
+    Maximum value |  0.7   0.8     0.8
+  -4              |                   
+    Minimum value |  0.7   0.6     0.6
+    Maximum value |  0.9   1.0     1.0
+  Total           |                   
+    Minimum value |  0.4   0.4     0.4
+    Maximum value |  0.9   1.0     1.0
+--------------------------------------
+
+. * Coverage: Monte Carlo error = 0.4 to 1.0%
+. table gamma studies if _perf=="power" & tau>0, stat(min s) stat(max s) nformat(%6.1f)
+
+--------------------------------------
+                  |       studies     
+                  |    5    20   Total
+------------------+-------------------
+gamma             |                   
+  -6              |                   
+    Minimum value |  0.6   0.9     0.6
+    Maximum value |  0.8   1.1     1.1
+  -5              |                   
+    Minimum value |  0.9   0.9     0.9
+    Maximum value |  1.0   1.1     1.1
+  -4              |                   
+    Minimum value |  1.1   0.4     0.4
+    Maximum value |  1.1   0.8     1.1
+  Total           |                   
+    Minimum value |  0.6   0.4     0.4
+    Maximum value |  1.1   1.1     1.1
+--------------------------------------
+
+. * Power: Monte Carlo error <= 1.1%
+. 
+. 
+. // ANALYSE ESTIMATES OF TAU
+. use twoSPcombine, clear
+(Combined results from twoSPsimrun and twoSPsimrun2)
+
+. drop error* b1* b2* s1* s2*
+
+. rename tau truetau
+
+. * drop all 2SP ML weighted or uncentred
+. drop tau2SPW* tau2SPU_REu
+
+. siman setup, dgm(aratio gamma studies truetau) rep(rep) est(tau) ///
+>         method(2SN_RE 2SPU_REc) true(truetau)
+Warning: siman setup found unwanted variables: beta n d singlezeroes doublezeroes sdb sdbw tau1SCoxi tau1SWei
+  tau1SWei_REu tau1SWei_REc tau1SCox tau2SN tau2SPU
+
+                   SUMMARY OF DATA
+_____________________________________________________
+
+Data-generating mechanism (DGM)
+  DGM variables (# levels):       aratio (2) gamma (3) studies (2) truetau (2) 
+  Total number of DGMs:           24
+
+Targets
+  Variable containing targets:    -
+  Number of targets:              1
+  Target values:                  
+
+Methods
+  Variable containing methods:    method
+  Number of methods:              2
+  Method values:                  2SN_RE; 2SPU_REc
+
+Repetition-level output
+  Point estimate variable:        tau
+  SE variable:                    -
+  df variable:                    -
+  Conf. limit variables:          -
+  p-value variable:               -
+  True value variable:            truetau
+
+Estimates data                    in data
+Performance statistics            not in data
+_____________________________________________________
+
+. siman ana, max(100)
+siman analyse has created variable _se to hold the MCSE
+siman analyse has run successfully
+
+. siman tab mean if truetau>0, row(truetau gamma aratio studies)
+
+-----------------------------------------------
+                         |         method      
+                         |    2SN_RE   2SPU_REc
+-------------------------+---------------------
+truetau                  |                     
+  .3                     |                     
+    gamma                |                     
+      -6                 |                     
+        aratio           |                     
+          1              |                     
+            studies      |                     
+              5          |                     
+                Estimate |  .1706666   .1608031
+                MCSE     |  .0063898   .0062139
+              20         |                     
+                Estimate |  .0781462   .2018916
+                MCSE     |  .0032726   .0048666
+          2              |                     
+            studies      |                     
+              5          |                     
+                Estimate |  .1722483   .1767932
+                MCSE     |  .0065982   .0067503
+              20         |                     
+                Estimate |  .0715668    .207438
+                MCSE     |  .0032706   .0050522
+      -5                 |                     
+        aratio           |                     
+          1              |                     
+            studies      |                     
+              5          |                     
+                Estimate |  .2091366   .1563874
+                MCSE     |   .005359   .0046462
+              20         |                     
+                Estimate |  .2035127   .2277473
+                MCSE     |  .0034865   .0034453
+          2              |                     
+            studies      |                     
+              5          |                     
+                Estimate |  .2169093   .1634963
+                MCSE     |  .0056121   .0048347
+              20         |                     
+                Estimate |  .2030167   .2293621
+                MCSE     |  .0035882   .0035696
+      -4                 |                     
+        aratio           |                     
+          1              |                     
+            studies      |                     
+              5          |                     
+                Estimate |  .2340954   .1811556
+                MCSE     |  .0042836   .0038304
+              20         |                     
+                Estimate |  .2724731   .2635552
+                MCSE     |  .0021749     .00214
+          2              |                     
+            studies      |                     
+              5          |                     
+                Estimate |  .2405912    .183097
+                MCSE     |   .004331    .003897
+              20         |                     
+                Estimate |  .2731232   .2629037
+                MCSE     |  .0022168    .002187
+-----------------------------------------------
+
+. siman nes mean if truetau>0, ///
+>         legend(pos(3) col(1)) stagger(.05) ///
+>         $PPT dglabsize(small) lw(*2 = = =) dglwidth(*2) ///
+>         lcol(blue red) lpat(dash dash) name(tauhet,replace)
+siman nestloop will draw 1 graphs (1 targets * 1 performance measures)
+
+. table gamma studies if rep<0 & _perf=="mean" & truetau>0, stat(max _se) stat(min _se) nformat(%6.3f)
+
+------------------------------------------
+                  |         studies       
+                  |      5      20   Total
+------------------+-----------------------
+gamma             |                       
+  -6              |                       
+    Maximum value |  0.007   0.005   0.007
+    Minimum value |  0.006   0.003   0.003
+  -5              |                       
+    Maximum value |  0.006   0.004   0.006
+    Minimum value |  0.005   0.003   0.003
+  -4              |                       
+    Maximum value |  0.004   0.002   0.004
+    Minimum value |  0.004   0.002   0.002
+  Total           |                       
+    Maximum value |  0.007   0.005   0.007
+    Minimum value |  0.004   0.002   0.002
+------------------------------------------
+
+. * Mean: Monte Carlo error < 0.007
+. 
+. /* before using simrecreate,need:
+> recast double px bx beta
+> foreach var of varlist px bx beta {
+>         replace `var' = round(`var',1E-7)
+> }
+> */
+. 
+end of do-file
+      name:  <unnamed>
+       log:  C:\ian\git\TwoStagePoisson\simulation\twoSPsimresults.log
+  log type:  text
+ closed on:  26 Mar 2026, 14:58:04
+---------------------------------------------------------------------------------------------------------------------

@@ -1,8 +1,8 @@
-------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------------------
       name:  <unnamed>
        log:  C:\ian\git\TwoStagePoisson\simulation\twoSPcombine.log
   log type:  text
- opened on:  26 Mar 2026, 11:55:27
+ opened on:  26 Mar 2026, 14:23:32
 
 . /*
 > twoSPcombine.do
@@ -31,12 +31,13 @@ C:\ian\git\TwoStagePoisson\simulation
 
 . adopath ++ C:\ian\git\TwoStagePoisson\ado
   [1]              "C:\ian\git\TwoStagePoisson\ado"
-  [2]  (BASE)      "C:\Program Files\StataNow19\ado\base/"
-  [3]  (SITE)      "C:\Program Files\StataNow19\ado\site/"
-  [4]              "."
-  [5]  (PERSONAL)  "c:\ian\ado\personal/"
-  [6]  (PLUS)      "c:\ian\ado\plus/"
-  [7]  (OLDPLACE)  "c:\ado/"
+  [2]              "c:\ian\git\simsum\package"
+  [3]  (BASE)      "C:\Program Files\StataNow19\ado\base/"
+  [4]  (SITE)      "C:\Program Files\StataNow19\ado\site/"
+  [5]              "."
+  [6]  (PERSONAL)  "c:\ian\ado\personal/"
+  [7]  (PLUS)      "c:\ian\ado\plus/"
+  [8]  (OLDPLACE)  "c:\ado/"
 
 . set scheme mrc
 
@@ -111,8 +112,8 @@ C:\ian\git\TwoStagePoisson\simulation
   6. 
 . // GENERATE THE DATA
 . version 14
-  7. syntax, studies(int) nobslow(int) nobsupp(int) px(real) aratio(real) gamma(real) bx(real) beta(re
-> al) tau(real) cens(real)
+  7. syntax, studies(int) nobslow(int) nobsupp(int) px(real) aratio(real) gamma(real) bx(real) beta(real) tau(real) cens(re
+> al)
   8. assert `studies'>1
   9. assert inrange(`px',0,1)
  10. assert `aratio'>0
@@ -319,7 +320,7 @@ end of do-file
 Reading 24 files........................
 Results loaded into current frame simrun_results
 
-. drop nobslow nobsupp px bx beta cens
+. drop nobslow nobsupp px bx cens
 
 . isid studies aratio gamma tau rep
 
@@ -329,17 +330,22 @@ Results loaded into current frame simrun_results
 
     Variable |        Obs        Mean    Std. dev.       Min        Max
 -------------+---------------------------------------------------------
+        beta |     48,000         -.3           0        -.3        -.3
         b1SC |     48,000   -.2799451    .2052547  -1.948192   1.771473
    b1SCinter |     48,000   -.2801217    .2054974  -1.954201   1.776035
       b1SWei |     47,949   -.2803185    .2050993  -1.949821   1.773286
    b1SWei_ML |     47,982   -.2854524    .2079631  -1.949812   1.772875
+-------------+---------------------------------------------------------
   b1SWei_MLc |     47,954   -.2834387    .2068275  -1.949812   1.772852
 
 . * b1SC b1SCinter b1SWei b1SWei_ML b1SWei_MLc
-. recast double studies aratio gamma tau, force
+. recast double studies aratio gamma tau beta, force
 
 . replace tau = round(tau,1E-3)
 (24,000 real changes made)
+
+. replace beta = round(beta,1E-3)
+(48,000 real changes made)
 
 . save z2, replace
 file z2.dta saved
@@ -365,12 +371,13 @@ C:\ian\git\TwoStagePoisson\simulation
 
 . adopath ++ C:\ian\git\TwoStagePoisson\ado
   [1]              "C:\ian\git\TwoStagePoisson\ado"
-  [2]  (BASE)      "C:\Program Files\StataNow19\ado\base/"
-  [3]  (SITE)      "C:\Program Files\StataNow19\ado\site/"
-  [4]              "."
-  [5]  (PERSONAL)  "c:\ian\ado\personal/"
-  [6]  (PLUS)      "c:\ian\ado\plus/"
-  [7]  (OLDPLACE)  "c:\ado/"
+  [2]              "c:\ian\git\simsum\package"
+  [3]  (BASE)      "C:\Program Files\StataNow19\ado\base/"
+  [4]  (SITE)      "C:\Program Files\StataNow19\ado\site/"
+  [5]              "."
+  [6]  (PERSONAL)  "c:\ian\ado\personal/"
+  [7]  (PLUS)      "c:\ian\ado\plus/"
+  [8]  (OLDPLACE)  "c:\ado/"
 
 . set scheme mrc
 
@@ -443,8 +450,8 @@ C:\ian\git\TwoStagePoisson\simulation
   6. 
 . // GENERATE THE DATA
 . version 14
-  7. syntax, studies(int) nobslow(int) nobsupp(int) px(real) aratio(real) gamma(real) bx(real) beta(re
-> al) tau(real) cens(real)
+  7. syntax, studies(int) nobslow(int) nobsupp(int) px(real) aratio(real) gamma(real) bx(real) beta(real) tau(real) cens(re
+> al)
   8. assert `studies'>1
   9. assert inrange(`px',0,1)
  10. assert `aratio'>0
@@ -718,7 +725,7 @@ end of do-file
 Reading 24 files........................
 Results loaded into current frame simrun_results
 
-. drop nobslow nobsupp px bx beta cens
+. drop nobslow nobsupp px bx cens
 
 . isid studies aratio gamma tau rep
 
@@ -728,23 +735,28 @@ Results loaded into current frame simrun_results
 
     Variable |        Obs        Mean    Std. dev.       Min        Max
 -------------+---------------------------------------------------------
+        beta |     48,000         -.3           0        -.3        -.3
         b1SC |     48,000   -.2799451    .2052547  -1.948192   1.771473
         b2SN |     48,000   -.2837204    .1907422  -1.467679   1.443675
        b2SPU |     48,000   -.2801357    .2055118  -1.941125   1.765184
        b2SPW |     48,000   -.2801159    .2055557  -1.941132   1.765276
-   b2SN_REML |     48,000   -.2883131    .1925626  -1.467679   1.443675
 -------------+---------------------------------------------------------
+   b2SN_REML |     48,000   -.2883131    .1925626  -1.467679   1.443675
      b2SN_ML |     48,000   -.2875075    .1914985  -1.467679   1.443675
     b2SPU_ML |     47,535   -.2854151    .2080925  -1.940802   1.765184
     b2SPW_ML |     47,588   -.2853032    .2081274  -1.941132   1.765276
    b2SPU_MLc |     47,793   -.2831171    .2065565  -1.941125   1.765158
+-------------+---------------------------------------------------------
    b2SPW_MLc |     47,803    -.283132    .2066991  -1.941132   1.765276
 
 . * b1SC b2SN b2SPU b2SPW b2SN_REML b2SN_ML b2SPU_ML b2SPW_ML b2SPU_MLc b2SPW_MLc
-. recast double studies aratio gamma tau, force
+. recast double studies aratio gamma tau beta, force
 
 . replace tau = round(tau,1E-3)
 (24,000 real changes made)
+
+. replace beta = round(beta,1E-3)
+(48,000 real changes made)
 
 . save z1, replace
 file z1.dta saved
@@ -772,6 +784,22 @@ file z1.dta saved
 . drop _merge
 
 . 
+. 
+. // relabel methods
+. drop *2SN_ML
+
+. rename (*1SC) (*1SCox)
+
+. rename (*1SCinter) (*1SCoxi)
+
+. rename (*_ML) (*_REu)
+
+. rename (*_MLc) (*_REc)
+
+. rename (*_REML) (*_RE)
+
+. 
+. 
 . label data "Combined results from twoSPsimrun and twoSPsimrun2"
 
 . save twoSPcombine, replace
@@ -787,5 +815,5 @@ end of do-file
       name:  <unnamed>
        log:  C:\ian\git\TwoStagePoisson\simulation\twoSPcombine.log
   log type:  text
- closed on:  26 Mar 2026, 11:55:28
-------------------------------------------------------------------------------------------------------
+ closed on:  26 Mar 2026, 14:23:32
+---------------------------------------------------------------------------------------------------------------------------

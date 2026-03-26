@@ -8,24 +8,26 @@ combine results of the two runs (same setting, different methods) in data twoSPc
 
 do twoSPsimrun2
 simcombine, settings(simrun2_settings)
-drop nobslow nobsupp px bx beta cens
+drop nobslow nobsupp px bx cens
 isid studies aratio gamma tau rep
 sort studies aratio gamma tau rep
 su b*
 * b1SC b1SCinter b1SWei b1SWei_ML b1SWei_MLc
-recast double studies aratio gamma tau, force
+recast double studies aratio gamma tau beta, force
 replace tau = round(tau,1E-3)
+replace beta = round(beta,1E-3)
 save z2, replace
 
 do twoSPsimrun
 simcombine, settings(simrun_settings)
-drop nobslow nobsupp px bx beta cens
+drop nobslow nobsupp px bx cens
 isid studies aratio gamma tau rep
 sort studies aratio gamma tau rep
 su b*
 * b1SC b2SN b2SPU b2SPW b2SN_REML b2SN_ML b2SPU_ML b2SPW_ML b2SPU_MLc b2SPW_MLc
-recast double studies aratio gamma tau, force
+recast double studies aratio gamma tau beta, force
 replace tau = round(tau,1E-3)
+replace beta = round(beta,1E-3)
 save z1, replace
 
 cf studies-error1SC using z2
@@ -37,6 +39,16 @@ drop *1SC
 merge 1:1 studies aratio gamma tau rep using z1
 assert _merge==3
 drop _merge
+
+
+// relabel methods
+drop *2SN_ML
+rename (*1SC) (*1SCox)
+rename (*1SCinter) (*1SCoxi)
+rename (*_ML) (*_REu)
+rename (*_MLc) (*_REc)
+rename (*_REML) (*_RE)
+
 
 label data "Combined results from twoSPsimrun and twoSPsimrun2"
 save twoSPcombine, replace
