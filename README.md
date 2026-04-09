@@ -2,7 +2,11 @@
 
 # TwoStagePoisson: code for paper "A Poisson approximation for two-stage meta-analysis of time-to-event data"
 
-Author: Ian White
+Code author: Ian White
+
+Paper authors: Ian White, Becky Turner, Richard Riley, David Fisher 
+
+The paper will shortly be submitted to Research Synthesis Methods
 
 Date: 9apr2026
 
