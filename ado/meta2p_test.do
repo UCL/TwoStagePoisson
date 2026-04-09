@@ -4,6 +4,9 @@ IW 17feb2026
 */
 
 set linesize 100
+cap log close
+prog drop _all
+log using meta2p_test, replace text nomsg
 which meta2p
 
 // Toy data: show meta2p reproduces 1-stage Poisson
@@ -39,6 +42,13 @@ assert abs(r(se_eff)-`truese')<1E-10
 
 // Check that options run
 
-meta2p est se, d(d1 d0) study(study) py(py1 py0) wt centre verb list irr eform re poissonopt(noheader intpoints(5))
-meta2p est se, d(d1 d0) study(study) py(py1 py0) wt centre verb list irr eform poissonopt(robust)
+meta2p est se, d(d1 d0) study(study) py(py1 py0) wt centre verb list irr eform re poissonopt(noheader intpoints(5)) wttol(20)
+meta2p est se, d(d1 d0) study(study) py(py1 py0) wt centre verb list irr eform poissonopt(robust) wttol(50)
 * robust isn't allowed with mepoisson
+
+// se not required if no wt
+meta2p est, d(d1 d0) 
+cap noi meta2p est, d(d1 d0) wt
+assert _rc==198
+
+log close

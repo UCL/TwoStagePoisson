@@ -1,5 +1,8 @@
 /*
-*! v0.5.1 IW 17feb2026
+*! v0.6 IW 9apr2026
+	SE is not required if wt not specified.
+	Weights are checked against new wttolerance
+v0.5.1 IW 17feb2026
 	options for Poisson must be included in new poissonoptions()
 	this means getting an option wrong (e.g. random instead of re) gives a clearer error message
 v0.5 IW 10dec2025
@@ -13,11 +16,17 @@ v0.2 IW 10sep2025
 prog def meta2p, rclass
 * run 2-stage Poisson-approx MA (CE and RE)
 * NB b is assumed to be a log HR or log RR for group 1 vs group 2
-syntax varlist(min=2 max=2) [if] [in], d(varlist min=2 max=2) [Study(varname) PYears(varlist min=2 max=2) wt RE CENtre VERBose pause list irr eform POISSONoptions(string) ///
-debug /// undocumented
-]
+syntax varlist(min=1 max=2) [if] [in], d(varlist min=2 max=2) [Study(varname) ///
+	PYears(varlist min=2 max=2) wt RE CENtre VERBose pause list irr eform ///
+	POISSONoptions(string) WTTOLerance(real 10) ///
+	debug /// undocumented
+	]
 local est : word 1 of `varlist'
 local se : word 2 of `varlist'
+if mi("`se'") & !mi("`wt'") {
+	di as error "se required with the wt option"
+	exit 198
+}
 local d1 : word 1 of `d'
 local d0 : word 2 of `d'
 if !mi("`verbose'") local noi noi
@@ -59,15 +68,34 @@ if `nsinglezero' qui replace `exp'0 = `pyratio' if min(`d0',`d1')==0
 rename `d1' `d'1
 rename `d0' `d'0
 qui keep `study' `d'1 `d'0 `exp'1 `exp'0 `se' `pyears'
-if !mi("`wt'") {
+if !mi("`se'") {
 	tempvar wtvar
 	qui gen `wtvar' = (1/`d'1+1/`d'0)/`se'^2
 	qui replace `wtvar' = 1 if min(`d'0,`d'1)==0 
-	local wtexp [iweight=`wtvar']
-	cap assert !mi("`wtvar'")
 	char `wtvar'[varname] "Weight"
+	if !mi("`wt'") {
+		local wtexp [iweight=`wtvar']
+		qui count if mi("`wtvar'")
+		if r(N) {
+			di as error "Warning: the weight is missing in " r(N) " studies"
+			l if mi("`wtvar'")
+		}
+	}
+	qui count if (`wtvar'>1+`wttolerance'/100 | `wtvar'<1-`wttolerance'/100) & !mi(`wtvar') 
+	if r(N) {
+		if !mi("`wt'") di as text "{p 0 2}Note: the Poisson approximation would mis-weight " r(N) ///
+			" studies by more than `wttolerance'%. The wt option will correct this.{p_end}"
+		else {
+			di as error "{p 0 2}Warning: the Poisson approximation mis-weights " r(N) ///
+			" studies by more than `wttolerance'%. Consider using the wt option.{p_end}"
+			tempvar sefromd
+			gen `sefromd' = sqrt(1/`d'1+1/`d'0)
+			char `sefromd'[varname] "se from d"
+			l `study' `se' `sefromd' `wtvar' if (`wtvar'>1+`wttolerance'/100 | `wtvar'<1-`wttolerance'/100) ///
+				& !mi(`wtvar'), subvarname abb(9) noo
+		}
+	}
 }
-drop `se'
 qui reshape long `d' `exp', i(`study') j(pooled)
 rename `d' Meta
 

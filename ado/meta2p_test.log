@@ -1,19 +1,7 @@
--------------------------------------------------------------------------------------------
-      name:  <unnamed>
-       log:  C:\ian\git\TwoStagePoisson\ado\meta2p_test.log
-  log type:  text
- opened on:  17 Feb 2026, 19:27:28
-
-. /*
-> very basic test script for meta2p
-> IW 17feb2026
-> */
-. 
-. set linesize 100
 
 . which meta2p
 C:\ian\git\TwoStagePoisson\ado\meta2p.ado
-*! v0.5.1 IW 17feb2026
+*! v0.6 IW 9apr2026
 
 . 
 . // Toy data: show meta2p reproduces 1-stage Poisson
@@ -145,7 +133,7 @@ Two-stage common-effects meta-analysis by unweighted Poisson approximation:
 . // Check that options run
 . 
 . meta2p est se, d(d1 d0) study(study) py(py1 py0) wt centre verb list irr eform re poissonopt(nohea
-> der intpoints(5))
+> der intpoints(5)) wttol(20)
 Data for Poisson model:
      +--------------------------------------------+
      | study   Group   Events   Pyears     Weight |
@@ -197,7 +185,8 @@ Two-stage random-effects meta-analysis by weighted Poisson approximation:
        tausq |   1.466769   .6700493     0.84   0.402     .5991229    3.590935
 ------------------------------------------------------------------------------
 
-. meta2p est se, d(d1 d0) study(study) py(py1 py0) wt centre verb list irr eform poissonopt(robust)
+. meta2p est se, d(d1 d0) study(study) py(py1 py0) wt centre verb list irr eform poissonopt(robust) 
+> wttol(50)
 Data for Poisson model:
      +--------------------------------------------+
      | study   Group   Events   Pyears     Weight |
@@ -236,9 +225,19 @@ Two-stage common-effects meta-analysis by weighted Poisson approximation:
 
 . * robust isn't allowed with mepoisson
 . 
-end of do-file
-      name:  <unnamed>
-       log:  C:\ian\git\TwoStagePoisson\ado\meta2p_test.log
-  log type:  text
- closed on:  17 Feb 2026, 19:27:28
-----------------------------------------------------------------------------------------------------
+. // se not required if no wt
+. meta2p est, d(d1 d0) 
+Two-stage common-effects meta-analysis by unweighted Poisson approximation:
+------------------------------------------------------------------------------
+        Meta | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+      pooled |  -.3566749   .1558387    -2.29   0.022    -.6621133   -.0512366
+------------------------------------------------------------------------------
+
+. cap noi meta2p est, d(d1 d0) wt
+se required with the wt option
+
+. assert _rc==198
+
+. 
+. log close

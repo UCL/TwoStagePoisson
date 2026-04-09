@@ -1,5 +1,5 @@
 {smcl}
-{* *! version 1.0 17 Feb 2026}{...}
+{* *! version 0.6 9apr2026}{...}
 {vieweralsosee "" "--"}{...}
 {vieweralsosee "Install command2" "ssc install command2"}{...}
 {vieweralsosee "Help command2 (if installed)" "help command2"}{...}
@@ -32,6 +32,7 @@ est se
 {synopt:{opt s:tudy(varname)}}Study identifier{p_end}
 {synopt:{opt py:ears(p1 p2)}}Names of variables containing person-years in groups 1 and 2. Only used if single-zero studies are found.{p_end}
 {synopt:{opt wt}}Use weights to make the Poisson data exactly reproduce the observed standard errors.{p_end}
+{synopt:{opt miswt:tol(#)}}% tolerance for weights.{p_end}
 {synopt:{opt re}}Fit random-effects model. Default is a common-effect model.{p_end}
 {synopt:{opt cen:tre}}Centre the treatment covariate.{p_end}
 {synopt:{opt verb:ose}}Show the output of the Poisson regression.{p_end}
@@ -73,6 +74,9 @@ fitted to the pseudo-data. Optionally, weights are applied to reproduce the stan
 {phang}{opt irr}  Report exponentiated coefficient (incidence rate ratio). Same as eform.{p_end}
 
 {dlgtab:Other}
+
+{phang}{opt miswt:tol(#)}  % tolerance for weights. If {cmd:wt} is not specified and the weights would deviate from 1 by more than #%,
+then a warning is printed and the deviating studies are listed. If {cmd:wt} is specified and the weights do deviate from 1 by more than #%, then a note is printed.{p_end}
 
 {phang}{opt s:tudy(varname)}  Study identifier. Has no effect.{p_end}
 

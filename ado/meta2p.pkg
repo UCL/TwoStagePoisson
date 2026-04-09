@@ -1,8 +1,8 @@
 v 3
 d meta2p: Two-stage Poisson approximation for Meta-Analysis
 d Program by Ian White
-d Version 0.5.1
-d Distribution-Date: 19feb2026
+d Version 0.6
+d Distribution-Date: 9apr2026
 
 f meta2p.ado
 f meta2p.sthlp
