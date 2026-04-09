@@ -9,6 +9,10 @@ cd C:\ian\git\TwoStagePoisson\toydata
 adopath ++ C:\ian\git\TwoStagePoisson\ado
 set scheme mrc
 
+cap log close
+set linesize 100
+log using toydata, text replace
+
 // Compute PLLFs: a bit slow
 prog drop _all
 use toydata, clear
@@ -38,9 +42,9 @@ summ norm12
 replace norm12=norm12-r(max)
 
 reshape long pll norm, i(beta) j(method)
-label var pll "Exact PLLF"
-label var norm "Normal approx"
-label def method 1 "Study 1" 2 "Study 2" 12 "Pooled"
+label var pll "Exact profile log-likelihood function"
+label var norm "Normal approximation"
+label def method 1 "Study 1" 2 "Study 2" 12 "Meta-analysis"
 label val method method
 
 // Draw graph
@@ -48,4 +52,13 @@ foreach var in pll norm {
 	replace `var'=. if `var'<-15
 }
 keep if inrange(beta,-3,1)
-line pll norm beta, lc(black =) lp(solid dash) lw(*2 =) ytitle(Relative profile log-likelihood,size(small)) legend(row(1) size(small)) xsize(6) ysize(7) xtitle(,size(small)) ytitle(,size(small)) ylab(,labsize(small)) xlab(,labsize(small)) name(toydataPLL,replace) by(method, note("") col(1) legend(pos(6))) subtitle(,size(small)) xline(-0.355, lcol(gray)) saving(toydata_pllf,replace)
+line pll norm beta, lc(black =) lp(solid dash) lw(*2 =) ///
+	ytitle(Relative profile log-likelihood,size(small)) ///
+	legend(col(1) size(small)) ///
+	xsize(6) ysize(7) xtitle(,size(small)) ytitle(,size(small)) ///
+	ylab(,labsize(small)) xlab(,labsize(small)) ///
+	by(method, note("") col(1) legend(pos(6))) ///
+	subtitle(,size(small)) xline(-0.355, lcol(gray)) ///
+	name(toydata_pllf,replace) saving(toydata_pllf,replace)
+
+log close
