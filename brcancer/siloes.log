@@ -1,28 +1,16 @@
----------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
       name:  <unnamed>
        log:  C:\ian\git\TwoStagePoisson\brcancer\siloes.log
   log type:  text
- opened on:  30 Jan 2026, 12:20:54
+ opened on:   9 Apr 2026, 17:06:25
 
-. /*
-> siloes.do
-> IW 23jan2026
-> */
 . 
-. // User-specific settings
-. cd C:\ian\git\TwoStagePoisson\brcancer
-C:\ian\git\TwoStagePoisson\brcancer
+. version
+version 18.0
 
-. adopath ++ C:\ian\git\TwoStagePoisson\ado
-  [1]              "C:\ian\git\TwoStagePoisson\ado"
-  [2]  (BASE)      "C:\Program Files\StataNow19\ado\base/"
-  [3]  (SITE)      "C:\Program Files\StataNow19\ado\site/"
-  [4]              "."
-  [5]  (PERSONAL)  "c:\ian\ado\personal/"
-  [6]  (PLUS)      "c:\ian\ado\plus/"
-  [7]  (OLDPLACE)  "c:\ado/"
-
-. set scheme mrc
+. which meta2p
+C:\ian\git\TwoStagePoisson\ado\meta2p.ado
+*! v0.6 IW 9apr2026
 
 . 
 . local reps 50
@@ -90,7 +78,8 @@ Log likelihood = -1783.765                              Prob > chi2   = 0.0030
 . foreach siloes in 2 5 10 25 {
   2.         frame post results (`siloes') (0) ($b) ($se)
   3.         forvalues rep=1/`reps' {
-  4.                 if `rep'==1 _dots 0, title("Simulation running (`reps' repetitions)")
+  4.                 if `rep'==1 _dots 0, title("`siloes' siloes: simulation running (`reps' repetit
+> ions)")
   5.                 _dots `rep' 0
   6.                 cap drop random silo
   7.                 gen random = runiform()
@@ -103,16 +92,16 @@ Log likelihood = -1783.765                              Prob > chi2   = 0.0030
 .         }
  14.         frame results: label def siloes `siloes' "`siloes' siloes", modify      
  15. }
-Simulation running (50 repetitions)
+2 siloes: simulation running (50 repetitions)
 ----+--- 1 ---+--- 2 ---+--- 3 ---+--- 4 ---+--- 5 
 ..................................................    50
-Simulation running (50 repetitions)
+5 siloes: simulation running (50 repetitions)
 ----+--- 1 ---+--- 2 ---+--- 3 ---+--- 4 ---+--- 5 
 ..................................................    50
-Simulation running (50 repetitions)
+10 siloes: simulation running (50 repetitions)
 ----+--- 1 ---+--- 2 ---+--- 3 ---+--- 4 ---+--- 5 
 ..................................................    50
-Simulation running (50 repetitions)
+25 siloes: simulation running (50 repetitions)
 ----+--- 1 ---+--- 2 ---+--- 3 ---+--- 4 ---+--- 5 
 ..................................................    50
 
@@ -121,7 +110,7 @@ Simulation running (50 repetitions)
 .         sort siloes rep
 .         by siloes: ci mean b se
 
----------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
 -> siloes = 2
 
     Variable |        Obs        Mean    Std. err.       [95% conf. interval]
@@ -129,7 +118,7 @@ Simulation running (50 repetitions)
            b |         51   -.3617428    .0013499       -.3644541   -.3590316
           se |         51    .1252271    .0000362        .1251544    .1252999
 
----------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
 -> siloes = 5
 
     Variable |        Obs        Mean    Std. err.       [95% conf. interval]
@@ -137,25 +126,25 @@ Simulation running (50 repetitions)
            b |         51   -.3530768    .0027013       -.3585024   -.3476511
           se |         51    .1260959    .0000753        .1259447    .1262472
 
----------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
 -> siloes = 10
 
     Variable |        Obs        Mean    Std. err.       [95% conf. interval]
 -------------+---------------------------------------------------------------
-           b |         51   -.3376255     .004022       -.3457038   -.3295471
-          se |         51    .1278852    .0001737        .1275363     .128234
+           b |         51   -.3376876    .0040135       -.3457491   -.3296262
+          se |         51    .1278764    .0001729        .1275292    .1282237
 
----------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
 -> siloes = 25
 
     Variable |        Obs        Mean    Std. err.       [95% conf. interval]
 -------------+---------------------------------------------------------------
-           b |         51   -.2887518    .0065482       -.3019043   -.2755993
-          se |         51    .1326148    .0003169        .1319784    .1332513
+           b |         51   -.2897171    .0067647       -.3033044   -.2761298
+          se |         51    .1326299    .0003092        .1320089    .1332508
 .         label val siloes siloes
 .         scatter se b if rep==0, ms(X) msize(*2) ///
 >         || scatter se b if rep>0, /*mlab(rep)*/ ms(oh) ///
->         || scatter se b if rep==11 & siloes==25, /*mlab(rep)*/ ms(o) ///
+>         || scatter se b if rep==11 & siloes==25, /*mlab(rep)*/ ms(O) msize(*1.5) ///
 >         by(siloes, note("")) legend(order(1 "1-stage" 2 "2-stage Normal")) ///
 >         xline($b) yline($se) ///
 >         xtitle(Log hazard ratio) ytitle(Standard error) ///
@@ -168,6 +157,9 @@ Simulation running (50 repetitions)
 . 
 . use siloes25_11, clear
 (German breast cancer data)
+
+. 
+. cap frame drop res25_11
 
 . frame create res25_11 str4 method b se
 
@@ -209,7 +201,7 @@ Log likelihood = -1783.765                              Prob > chi2   = 0.0030
          1 |         6          5 |        11 
          2 |        10          3 |        13 
          3 |         7          4 |        11 
-         4 |        11          4 |        15 
+         4 |        12          3 |        15 
          5 |         7          3 |        10 
          6 |        11          5 |        16 
          7 |         6          3 |         9 
@@ -221,7 +213,7 @@ Log likelihood = -1783.765                              Prob > chi2   = 0.0030
         13 |         7          3 |        10 
         14 |        16          0 |        16 
         15 |         6          6 |        12 
-        16 |        11          4 |        15 
+        16 |        10          5 |        15 
         17 |         6          5 |        11 
         18 |         8          5 |        13 
         19 |         7          6 |        13 
@@ -317,24 +309,23 @@ Log likelihood = -31.000406                             Prob > chi2   = 0.6543
   Analysis time _t: rectime
 
 Iteration 0:  Log likelihood =  -41.64643
-Iteration 1:  Log likelihood =  -41.45701
-Iteration 2:  Log likelihood =  -41.45469
-Iteration 3:  Log likelihood =  -41.45469
+Iteration 1:  Log likelihood = -41.638258
+Iteration 2:  Log likelihood = -41.638253
 Refining estimates:
-Iteration 0:  Log likelihood =  -41.45469
+Iteration 0:  Log likelihood = -41.638253
 
 Cox regression with no ties
 
 No. of subjects =     27                                Number of obs =     27
 No. of failures =     15
-Time at risk    = 29,498
-                                                        LR chi2(1)    =   0.38
-Log likelihood = -41.45469                              Prob > chi2   = 0.5357
+Time at risk    = 29,725
+                                                        LR chi2(1)    =   0.02
+Log likelihood = -41.638253                             Prob > chi2   = 0.8982
 
 ------------------------------------------------------------------------------
           _t | Haz. ratio   Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
-      hormon |    1.45903   .8643574     0.64   0.524     .4568736    4.659425
+      hormon |   1.087729   .7094757     0.13   0.897     .3029152    3.905893
 ------------------------------------------------------------------------------
 
 -> silo==5 
@@ -690,25 +681,25 @@ Log likelihood = -34.712921                             Prob > chi2   = 0.8115
         Failure _d: censrec
   Analysis time _t: rectime
 
-Iteration 0:  Log likelihood = -39.299347
-Iteration 1:  Log likelihood = -38.638923
-Iteration 2:  Log likelihood = -38.634488
-Iteration 3:  Log likelihood = -38.634488
+Iteration 0:  Log likelihood = -39.461866
+Iteration 1:  Log likelihood = -39.203342
+Iteration 2:  Log likelihood = -39.202933
+Iteration 3:  Log likelihood = -39.202933
 Refining estimates:
-Iteration 0:  Log likelihood = -38.634488
+Iteration 0:  Log likelihood = -39.202933
 
 Cox regression with no ties
 
 No. of subjects =     28                                Number of obs =     28
 No. of failures =     15
-Time at risk    = 31,018
-                                                        LR chi2(1)    =   1.33
-Log likelihood = -38.634488                             Prob > chi2   = 0.2489
+Time at risk    = 30,791
+                                                        LR chi2(1)    =   0.52
+Log likelihood = -39.202933                             Prob > chi2   = 0.4718
 
 ------------------------------------------------------------------------------
           _t | Haz. ratio   Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
-      hormon |   .5178804   .3083763    -1.11   0.269     .1612034    1.663737
+      hormon |   .6746967    .375839    -0.71   0.480     .2264372    2.010339
 ------------------------------------------------------------------------------
 
 -> silo==17 
@@ -956,34 +947,36 @@ Log likelihood = -36.500087                             Prob > chi2   = 0.3029
 
 . rename S se
 
+. format b se %6.3f
+
 . l, noo clean
 
-    silo            b          se   d1   d0   p1   p0  
-       1    .38577771   .60839146    5    6   10   18  
-       2    .16640485   .66560947    3   10    7   20  
-       3    -.2815565   .63581876    4    7   13   15  
-       4    .37777182   .59241921    4   11    6   21  
-       5   -.81127806   .70864811    3    7   15   13  
-       6   -1.7298575   .58025777    5   11   12   15  
-       7   -.22496665   .71160682    3    6    9   19  
-       8   -.19311713   .80460327    2    9    8   19  
-       9   -36.301366    56276277    0    9    4   23  
-      10   -.76300025   .78171823    2   10    7   21  
-      11    .26313396   .57135962    5    8    9   18  
-      12    .81299819   .58933855    6    6    9   19  
-      13    .36970539   .69735748    3    7    7   20  
-      14   -36.525509    37530710    0   16    4   24  
-      15      .137859   .57797336    6    6   13   14  
-      16   -.65801099   .59545859    4   11    9   19  
-      17    .00268251   .61845261    5    6   10   17  
-      18    .27864792   .57138236    5    8    9   18  
-      19   -1.1455232   .56309036    6    7   17   11  
-      20   -1.1778316   .68089579    4    8   13   14  
-      21   -.43537761   .64710133    5    6   13   15  
-      22    .57851163   .63520595    5    5   10   17  
-      23   -1.1092105   .79220535    2    8   10   18  
-      24   -1.4543703   .79660205    2    8   11   16  
-      25   -.56875313   .56341629    5    9   11   16  
+    silo         b        se   d1   d0   p1   p0  
+       1     0.386     0.608    5    6   10   18  
+       2     0.166     0.666    3   10    7   20  
+       3    -0.282     0.636    4    7   13   15  
+       4     0.084     0.652    3   12    5   22  
+       5    -0.811     0.709    3    7   15   13  
+       6    -1.730     0.580    5   11   12   15  
+       7    -0.225     0.712    3    6    9   19  
+       8    -0.193     0.805    2    9    8   19  
+       9   -36.301   5.6e+07    0    9    4   23  
+      10    -0.763     0.782    2   10    7   21  
+      11     0.263     0.571    5    8    9   18  
+      12     0.813     0.589    6    6    9   19  
+      13     0.370     0.697    3    7    7   20  
+      14   -36.526   3.8e+07    0   16    4   24  
+      15     0.138     0.578    6    6   13   14  
+      16    -0.393     0.557    5   10   10   18  
+      17     0.003     0.618    5    6   10   17  
+      18     0.279     0.571    5    8    9   18  
+      19    -1.146     0.563    6    7   17   11  
+      20    -1.178     0.681    4    8   13   14  
+      21    -0.435     0.647    5    6   13   15  
+      22     0.579     0.635    5    5   10   17  
+      23    -1.109     0.792    2    8   10   18  
+      24    -1.454     0.797    2    8   11   16  
+      25    -0.569     0.563    5    9   11   16  
 
 . 
 . // two-stage Normal
@@ -998,36 +991,36 @@ using the common-effect inverse-variance model
 --------------------------------------------------------------------
 Study                |   Effect    [95% Conf. Interval]   % Weight
 ---------------------+----------------------------------------------
-1                    |     0.386     -0.807     1.578       4.79
-2                    |     0.166     -1.138     1.471       4.00
+1                    |     0.386     -0.807     1.578       4.80
+2                    |     0.166     -1.138     1.471       4.01
 3                    |    -0.282     -1.528     0.965       4.39
-4                    |     0.378     -0.783     1.539       5.05
-5                    |    -0.811     -2.200     0.578       3.53
-6                    |    -1.730     -2.867    -0.593       5.27
-7                    |    -0.225     -1.620     1.170       3.50
+4                    |     0.084     -1.194     1.362       4.18
+5                    |    -0.811     -2.200     0.578       3.54
+6                    |    -1.730     -2.867    -0.593       5.28
+7                    |    -0.225     -1.620     1.170       3.51
 8                    |    -0.193     -1.770     1.384       2.74
 9                    |   -36.301    -1.1e+08   1.1e+08      0.00
-10                   |    -0.763     -2.295     0.769       2.90
-11                   |     0.263     -0.857     1.383       5.43
+10                   |    -0.763     -2.295     0.769       2.91
+11                   |     0.263     -0.857     1.383       5.44
 12                   |     0.813     -0.342     1.968       5.11
 13                   |     0.370     -0.997     1.737       3.65
 14                   |   -36.526    -7.4e+07   7.4e+07      0.00
-15                   |     0.138     -0.995     1.271       5.31
-16                   |    -0.658     -1.825     0.509       5.00
+15                   |     0.138     -0.995     1.271       5.32
+16                   |    -0.393     -1.485     0.698       5.73
 17                   |     0.003     -1.209     1.215       4.64
-18                   |     0.279     -0.841     1.399       5.43
-19                   |    -1.146     -2.249    -0.042       5.59
+18                   |     0.279     -0.841     1.399       5.44
+19                   |    -1.146     -2.249    -0.042       5.60
 20                   |    -1.178     -2.512     0.157       3.83
 21                   |    -0.435     -1.704     0.833       4.24
 22                   |     0.579     -0.666     1.823       4.40
 23                   |    -1.109     -2.662     0.443       2.83
-24                   |    -1.454     -3.016     0.107       2.79
-25                   |    -0.569     -1.673     0.536       5.59
+24                   |    -1.454     -3.016     0.107       2.80
+25                   |    -0.569     -1.673     0.536       5.60
 ---------------------+----------------------------------------------
-Overall, IV          |    -0.270     -0.531    -0.009     100.00
+Overall, IV          |    -0.276     -0.537    -0.015     100.00
 --------------------------------------------------------------------
 
-Test of overall effect = 0:  z =  -2.029  p = 0.043
+Test of overall effect = 0:  z =  -2.069  p = 0.039
 
 
 Heterogeneity measures, calculated from the data
@@ -1035,36 +1028,49 @@ with Conf. Intervals based on non-central chi² (common-effect) distribution for
 ---------------------------------------------------------
 Measure              |     Value      df      p-value
 ---------------------+-----------------------------------
-Cochran's Q          |     26.90       24      0.309
+Cochran's Q          |     25.62       24      0.373
                      |            -[95% Conf. Interval]-
-H                    |     1.059     1.000     1.354
-I² (%)               |     10.8%      0.0%     45.4%
+H                    |     1.033     1.000     1.323
+I² (%)               |      6.3%      0.0%     42.8%
 ---------------------------------------------------------
 H = relative excess in Cochran's Q over its degrees-of-freedom
-I² = proportion of total variation in effect estimate due to between-study heterogeneity (bas
-> ed on Q)
+I² = proportion of total variation in effect estimate due to between-study heterogeneity (based on Q
+> )
 
 . frame post res25_11 ("2SN") (r(eff)) (r(se_eff))
 
 . // two-stage Poisson
 . meta2p b se, d(d1 d0) py(p1 p0)
 Found 2 single-zero studies: comparing events/person-years using reported person-years
+Warning: the Poisson approximation mis-weights 3 studies by more than 10%. Consider using the wt
+  option.
+(2 missing values generated)
+
+  +-----------------------------------------+
+  | __000001      se   se from d     Weight |
+  |-----------------------------------------|
+  |        6   0.580    .5393599   .8640032 |
+  |       20   0.681    .6123725   .8088537 |
+  |       21   0.647    .6055301   .8756425 |
+  +-----------------------------------------+
 Two-stage common-effects meta-analysis by unweighted Poisson approximation:
 ------------------------------------------------------------------------------
         Meta | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
-      pooled |  -.3964709   .1318578    -3.01   0.003    -.6549075   -.1380342
+      pooled |  -.3970415   .1319188    -3.01   0.003    -.6555977   -.1384854
 ------------------------------------------------------------------------------
 
 . frame post res25_11 ("2SP") (r(eff)) (r(se_eff))
 
 . meta2p b se, d(d1 d0) py(p1 p0) wt
 Found 2 single-zero studies: comparing events/person-years using reported person-years
+Note: the Poisson approximation would mis-weight 3 studies by more than 10%. The wt option will
+  correct this.
 Two-stage common-effects meta-analysis by weighted Poisson approximation:
 ------------------------------------------------------------------------------
         Meta | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
 -------------+----------------------------------------------------------------
-      pooled |  -.3788126   .1343704    -2.82   0.005    -.6421737   -.1154515
+      pooled |  -.3793864   .1343971    -2.82   0.005    -.6427999   -.1159729
 ------------------------------------------------------------------------------
 
 . frame post res25_11 ("2SPW") (r(eff)) (r(se_eff))
@@ -1074,15 +1080,14 @@ Two-stage common-effects meta-analysis by weighted Poisson approximation:
 
     method           b         se  
         1S   -.3638988   .1250441  
-       2SN   -.2701463   .1331726  
-       2SP   -.3964708   .1318578  
-      2SPW   -.3788126   .1343704  
+       2SN   -.2757793   .1332866  
+       2SP   -.3970415   .1319188  
+      2SPW   -.3793864   .1343971  
 
 . 
-. 
-end of do-file
+. log close
       name:  <unnamed>
        log:  C:\ian\git\TwoStagePoisson\brcancer\siloes.log
   log type:  text
- closed on:  30 Jan 2026, 12:21:37
----------------------------------------------------------------------------------------------
+ closed on:   9 Apr 2026, 17:06:55
+----------------------------------------------------------------------------------------------------

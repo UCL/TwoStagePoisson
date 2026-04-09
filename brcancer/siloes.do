@@ -1,12 +1,21 @@
 /*
 siloes.do
 IW 23jan2026
+minor revision 9apr2026
 */
 
 // User-specific settings
 cd C:\ian\git\TwoStagePoisson\brcancer
 adopath ++ C:\ian\git\TwoStagePoisson\ado
 set scheme mrc
+
+version 18
+cap log close
+set linesize 100
+log using siloes, text replace
+
+version
+which meta2p
 
 local reps 50
 set seed 461860
@@ -22,7 +31,7 @@ frame create results siloes rep b se
 foreach siloes in 2 5 10 25 {
 	frame post results (`siloes') (0) ($b) ($se)
 	forvalues rep=1/`reps' {
-		if `rep'==1 _dots 0, title("Simulation running (`reps' repetitions)")
+		if `rep'==1 _dots 0, title("`siloes' siloes: simulation running (`reps' repetitions)")
 		_dots `rep' 0
 		cap drop random silo
 		gen random = runiform()
@@ -42,7 +51,7 @@ frame results {
 	label val siloes siloes
 	scatter se b if rep==0, ms(X) msize(*2) ///
 	|| scatter se b if rep>0, /*mlab(rep)*/ ms(oh) ///
-	|| scatter se b if rep==11 & siloes==25, /*mlab(rep)*/ ms(o) ///
+	|| scatter se b if rep==11 & siloes==25, /*mlab(rep)*/ ms(O) msize(*1.5) ///
 	by(siloes, note("")) legend(order(1 "1-stage" 2 "2-stage Normal")) ///
 	xline($b) yline($se) ///
 	xtitle(Log hazard ratio) ytitle(Standard error) ///
@@ -53,6 +62,8 @@ frame results {
 // explore a typical data set
 
 use siloes25_11, clear
+
+cap frame drop res25_11
 frame create res25_11 str4 method b se
 // one-stage
 stcox hormon, nohr
@@ -68,6 +79,7 @@ keep if !mi(B)
 keep silo B S d? p?
 rename B b
 rename S se
+format b se %6.3f
 l, noo clean
 
 // two-stage Normal
@@ -81,3 +93,4 @@ frame post res25_11 ("2SPW") (r(eff)) (r(se_eff))
 
 frame res25_11: l, noo clean
 
+log close

@@ -2,7 +2,15 @@
       name:  <unnamed>
        log:  C:\ian\git\TwoStagePoisson\toydata\toydata.log
   log type:  text
- opened on:   9 Apr 2026, 14:52:58
+ opened on:   9 Apr 2026, 16:57:34
+
+. 
+. version
+version 18.0
+
+. which meta2p
+C:\ian\git\TwoStagePoisson\ado\meta2p.ado
+*! v0.6 IW 9apr2026
 
 . 
 . // Compute PLLFs: a bit slow
@@ -166,5 +174,5 @@ file toydata_pllf.gph saved
       name:  <unnamed>
        log:  C:\ian\git\TwoStagePoisson\toydata\toydata.log
   log type:  text
- closed on:   9 Apr 2026, 14:53:29
+ closed on:   9 Apr 2026, 16:57:59
 ----------------------------------------------------------------------------------------------------

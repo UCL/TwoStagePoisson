@@ -1,7 +1,8 @@
 /*
-"toydata.do"
+toydata.do
 IW 5/9/2025
 for github 30/1/2026
+minor revision 9apr2026
 */
 
 // User-specific settings
@@ -9,9 +10,13 @@ cd C:\ian\git\TwoStagePoisson\toydata
 adopath ++ C:\ian\git\TwoStagePoisson\ado
 set scheme mrc
 
+version 18
 cap log close
 set linesize 100
 log using toydata, text replace
+
+version
+which meta2p
 
 // Compute PLLFs: a bit slow
 prog drop _all
