@@ -1,4 +1,4 @@
-<a href ="https://www.mrcctu.ucl.ac.uk/"><img src="MRCCTU_at_UCL_Logo.png" width="50%" /></a>
+<a href ="https://www.innovative-ctu.ucl.ac.uk/"><img src="UCL_Logo_H_2C_OW_RGB_Innov-Clinical-Trials-Unit.png" width="50%" /></a>
 
 # TwoStagePoisson: code for paper "A Poisson approximation for two-stage meta-analysis of time-to-event data"
 
