@@ -1,7 +1,7 @@
 /*
 siloes.do
 IW 23jan2026
-minor revision 9apr2026
+minor revision 9apr2026, 24apr2026
 */
 
 // User-specific settings
@@ -49,14 +49,17 @@ frame results {
 	sort siloes rep
 	by siloes: ci mean b se
 	label val siloes siloes
+	save siloes, replace
+}
+
+frame results : ///
 	scatter se b if rep==0, ms(X) msize(*2) ///
 	|| scatter se b if rep>0, /*mlab(rep)*/ ms(oh) ///
 	|| scatter se b if rep==11 & siloes==25, /*mlab(rep)*/ ms(O) msize(*1.5) ///
-	by(siloes, note("")) legend(order(1 "1-stage" 2 "2-stage Normal")) ///
+	by(siloes, note("")) legend(order(1 "Without splitting" 2 "2-stage Normal approx")) ///
 	xline($b) yline($se) ///
 	xtitle(Log hazard ratio) ytitle(Standard error) ///
 	name(siloes, replace) $PPT
-}
 
 
 // explore a typical data set
