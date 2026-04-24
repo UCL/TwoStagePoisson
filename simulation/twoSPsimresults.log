@@ -1,14 +1,17 @@
----------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------
       name:  <unnamed>
        log:  C:\ian\git\TwoStagePoisson\simulation\twoSPsimresults.log
   log type:  text
- opened on:  26 Mar 2026, 14:57:08
+ opened on:  24 Apr 2026, 18:18:18
 
 . /*
 > twoSPsimresults.do
 > Simulation study to evaluate two-stage Poisson (2SP) method for meta-analysis of TTE data
-> Main results
+> Main results for paper
 > */
+. 
+. set linesize 120
+
 . 
 . // DESCRIPTIVE
 . use twoSPcombine, clear 
@@ -67,14 +70,14 @@ doublezeroes |     48,000    .0865625    1.010532          0         20
 . use twoSPcombine, clear
 (Combined results from twoSPsimrun and twoSPsimrun2)
 
-. mvpatterns b1*
-variables with no mv's: b1SCoxi b1SCox
+. mvpatterns bCox* bWei*
+variables with no mv's: bCox_i bCox
 
 Variable     | type     obs   mv   variable label
 -------------+-----------------------------------
-b1SWei       | float  47949   51   
-b1SWei_REu   | float  47982   18   
-b1SWei_REc   | float  47954   46   
+bWei         | float  47949   51   
+bWei_RE      | float  47982   18   
+bWei_REc     | float  47954   46   
 -------------------------------------------------
 
 Patterns of missing values
@@ -88,15 +91,15 @@ Patterns of missing values
   |      +.+     1      18 |
   +------------------------+
 
-. mvpatterns b2*
-variables with no mv's: b2SN b2SPU b2SPW b2SN_RE
+. mvpatterns bN* bP*
+variables with no mv's: bN bN_RE bPU bPW
 
 Variable     | type     obs   mv   variable label
 -------------+-----------------------------------
-b2SPU_REu    | float  47535  465   
-b2SPW_REu    | float  47588  412   
-b2SPU_REc    | float  47793  207   
-b2SPW_REc    | float  47803  197   
+bPU_RE       | float  47535  465   
+bPW_RE       | float  47588  412   
+bPU_REc      | float  47793  207   
+bPW_REc      | float  47803  197   
 -------------------------------------------------
 
 Patterns of missing values
@@ -119,11 +122,11 @@ Patterns of missing values
 
 . 
 . 
-. // COMPARE 1SC METHODS
+. // COMPARE REFERENCE METHODS
 . use twoSPcombine, clear
 (Combined results from twoSPsimrun and twoSPsimrun2)
 
-. gen absdiff=abs(b1SWei - b1SCox)
+. gen absdiff=abs(bWei - bCox)
 (51 missing values generated)
 
 . su absdiff
@@ -132,14 +135,13 @@ Patterns of missing values
 -------------+---------------------------------------------------------
      absdiff |     47,949    .0004406    .0003648   2.98e-08   .0038844
 
-. * 1SWei and 1SC never differ by more than 0.004
+. * Wei and Cox never differ by more than 0.004
 . 
-. drop error* tau?*
+. drop error* tauCox* tauWei* tauN* tauP* 
 
-. siman setup, dgm(aratio gamma studies tau) rep(rep) est(b) se(s) method(1SCox 1SCoxi 1SWei) true(beta)
-Warning: siman setup found unwanted variables: n d singlezeroes doublezeroes sdb sdbw b1SWei_REu s1SWei_REu
-  b1SWei_REc s1SWei_REc b2SN s2SN b2SPU s2SPU b2SPW s2SPW b2SN_RE s2SN_RE b2SPU_REu s2SPU_REu b2SPW_REu s2SPW_REu
-  b2SPU_REc s2SPU_REc b2SPW_REc s2SPW_REc absdiff
+. siman setup, dgm(aratio gamma studies tau) rep(rep) est(b) se(s) method(Cox Cox_i Wei) true(beta)
+Warning: siman setup found unwanted variables: n d singlezeroes doublezeroes sdb sdbw bWei_RE sWei_RE bWei_REc sWei_REc
+  bN sN bPU sPU bPW sPW bN_RE sN_RE bPU_RE sPU_RE bPW_RE sPW_RE bPU_REc sPU_REc bPW_REc sPW_REc absdiff
 
                    SUMMARY OF DATA
 _____________________________________________________
@@ -156,7 +158,7 @@ Targets
 Methods
   Variable containing methods:    method
   Number of methods:              3
-  Method values:                  1SCox; 1SCoxi; 1SWei
+  Method values:                  Cox; Cox_i; Wei
 
 Repetition-level output
   Point estimate variable:        b
@@ -173,19 +175,26 @@ _____________________________________________________
 . siman ana, max(15)
 siman analyse has run successfully
 
-. siman nes pctbias modelse, ///
+. siman nes pctbias, ///
 >         legend(pos(3) col(1)) stagger(.05) $PPT ///
 >         dglabsize(small) lw(*2 = = =) dglwidth(*2) ///
 >         lcol(black green purple) lpat(solid = =) ///
->         name(compare1SC,replace)
-siman nestloop will draw 2 graphs (1 targets * 2 performance measures)
+>         name(compareC,replace) yla(-15(5)5)
+siman nestloop will draw 1 graphs (1 targets * 1 performance measures)
+
+. siman nes modelse, ///
+>         legend(pos(3) col(1)) stagger(.05) $PPT ///
+>         dglabsize(small) lw(*2 = = =) dglwidth(*2) ///
+>         lcol(black green purple) lpat(solid = =) ///
+>         name(compareC,replace) yla(0 .1 .2 .3)
+siman nestloop will draw 1 graphs (1 targets * 1 performance measures)
 
 . * the 3 methods have indistinguishable bias and modelSE
 . table studies method if rep==-4, stat(min s) stat(max s)
 
 --------------------------------------------------------------
                   |                    method                 
-                  |     1SCox     1SCoxi      1SWei      Total
+                  |       Cox      Cox_i        Wei      Total
 ------------------+-------------------------------------------
 studies           |                                           
   5               |                                           
@@ -203,7 +212,7 @@ studies           |
 
 --------------------------------------------------------------
                   |                    method                 
-                  |     1SCox     1SCoxi      1SWei      Total
+                  |       Cox      Cox_i        Wei      Total
 ------------------+-------------------------------------------
 studies           |                                           
   5               |                                           
@@ -219,16 +228,15 @@ studies           |
 
 . 
 . 
-. // COMPARE UNWEIGHTED AND WEIGHTED 2SP METHODS
+. // COMPARE UNWEIGHTED AND WEIGHTED P METHODS
 . use twoSPcombine, clear
 (Combined results from twoSPsimrun and twoSPsimrun2)
 
-. drop error* tau?*
+. drop error* tauCox* tauWei* tauN* tauP*
 
-. siman setup, dgm(aratio gamma studies tau) rep(rep) est(b) se(s) method(2SPU 2SPW 2SPU_REc 2SPW_REc) true(beta)
-Warning: siman setup found unwanted variables: n d singlezeroes doublezeroes sdb sdbw b1SCoxi s1SCoxi b1SWei s1SWei
-  b1SWei_REu s1SWei_REu b1SWei_REc s1SWei_REc b1SCox s1SCox b2SN s2SN b2SN_RE s2SN_RE b2SPU_REu s2SPU_REu b2SPW_REu
-  s2SPW_REu
+. siman setup, dgm(aratio gamma studies tau) rep(rep) est(b) se(s) method(PU PW PU_REc PW_REc) true(beta)
+Warning: siman setup found unwanted variables: n d singlezeroes doublezeroes sdb sdbw bCox_i sCox_i bWei sWei bWei_RE
+  sWei_RE bWei_REc sWei_REc bCox sCox bN sN bN_RE sN_RE bPU_RE sPU_RE bPW_RE sPW_RE
 
                    SUMMARY OF DATA
 _____________________________________________________
@@ -245,7 +253,7 @@ Targets
 Methods
   Variable containing methods:    method
   Number of methods:              4
-  Method values:                  2SPU; 2SPW; 2SPU_REc; 2SPW_REc
+  Method values:                  PU; PW; PU_REc; PW_REc
 
 Repetition-level output
   Point estimate variable:        b
@@ -262,21 +270,37 @@ _____________________________________________________
 . siman ana
 siman analyse has run successfully
 
-. siman nes pctbias modelse ///
->         if inlist(method,"2SPU":methodlabel,"2SPW":methodlabel), ///
+. siman nes pctbias ///
+>         if inlist(method,"PU":methodlabel,"PW":methodlabel), ///
 >         legend(pos(3) col(1)) stagger(.05) $PPT ///
 >         dglabsize(small) lw(*2 = = =) dglwidth(*2) ///
 >         lcol(red =) lpat(solid dash) ///
->         name(weightingCE,replace)
-siman nestloop will draw 2 graphs (1 targets * 2 performance measures)
+>         name(weightingCE,replace) yla(-15(5)5)
+siman nestloop will draw 1 graphs (1 targets * 1 performance measures)
 
-. siman nes pctbias modelse ///
->         if inlist(method,"2SPU_REc":methodlabel,"2SPW_REc":methodlabel), ///
+. siman nes modelse ///
+>         if inlist(method,"PU":methodlabel,"PW":methodlabel), ///
 >         legend(pos(3) col(1)) stagger(.05) $PPT ///
 >         dglabsize(small) lw(*2 = = =) dglwidth(*2) ///
 >         lcol(red =) lpat(solid dash) ///
->         name(weightingRE,replace)
-siman nestloop will draw 2 graphs (1 targets * 2 performance measures)
+>         name(weightingCE,replace) yla(.1 .2 .3)
+siman nestloop will draw 1 graphs (1 targets * 1 performance measures)
+
+. siman nes pctbias ///
+>         if inlist(method,"PU_REc":methodlabel,"PW_REc":methodlabel), ///
+>         legend(pos(3) col(1)) stagger(.05) $PPT ///
+>         dglabsize(small) lw(*2 = = =) dglwidth(*2) ///
+>         lcol(red =) lpat(solid dash) ///
+>         name(weightingRE,replace) yla(-15(5)5)
+siman nestloop will draw 1 graphs (1 targets * 1 performance measures)
+
+. siman nes modelse ///
+>         if inlist(method,"PU_REc":methodlabel,"PW_REc":methodlabel), ///
+>         legend(pos(3) col(1)) stagger(.05) $PPT ///
+>         dglabsize(small) lw(*2 = = =) dglwidth(*2) ///
+>         lcol(red =) lpat(solid dash) ///
+>         name(weightingRE,replace) yla(.1 .2 .3 .4)
+siman nestloop will draw 1 graphs (1 targets * 1 performance measures)
 
 . table gamma studies if rep<0 & _perf=="pctbias", stat(max s) stat(min s) nformat(%6.3f)
 
@@ -307,12 +331,11 @@ gamma             |
 . use twoSPcombine, clear
 (Combined results from twoSPsimrun and twoSPsimrun2)
 
-. drop error* tau?*
+. drop error* tauCox* tauWei* tauN* tauP*
 
-. siman setup, dgm(aratio gamma studies tau) rep(rep) est(b) se(s) method(1SWei_REc 1SWei_REu 2SPU_REc 2SPU_REu) true
-> (beta)
-Warning: siman setup found unwanted variables: n d singlezeroes doublezeroes sdb sdbw b1SCoxi s1SCoxi b1SWei s1SWei
-  b1SCox s1SCox b2SN s2SN b2SPU s2SPU b2SPW s2SPW b2SN_RE s2SN_RE b2SPW_REu s2SPW_REu b2SPW_REc s2SPW_REc
+. siman setup, dgm(aratio gamma studies tau) rep(rep) est(b) se(s) method(Wei_REc Wei_RE PU_REc PU_RE) true(beta)
+Warning: siman setup found unwanted variables: n d singlezeroes doublezeroes sdb sdbw bCox_i sCox_i bWei sWei bCox sCox
+  bN sN bPU sPU bPW sPW bN_RE sN_RE bPW_RE sPW_RE bPW_REc sPW_REc
 
                    SUMMARY OF DATA
 _____________________________________________________
@@ -329,7 +352,7 @@ Targets
 Methods
   Variable containing methods:    method
   Number of methods:              4
-  Method values:                  1SWei_REc; 1SWei_REu; 2SPU_REc; 2SPU_REu
+  Method values:                  Wei_REc; Wei_RE; PU_REc; PU_RE
 
 Repetition-level output
   Point estimate variable:        b
@@ -346,74 +369,90 @@ _____________________________________________________
 . siman ana
 siman analyse has run successfully
 
-. siman nes pctbias cover ///
->         if inlist(method,"1SWei_REu":methodlabel,"1SWei_REc":methodlabel), ///
->         legend(pos(3) col(1)) stagger(.05) $PPT ///
->         dglabsize(small) lw(*2 = = =) dglwidth(*2) ///
->         lcol(black =) lpat(solid dash) ///
->         name(centring1SWei,replace)
-siman nestloop will draw 2 graphs (1 targets * 2 performance measures)
-
-. siman nes pctbias cover ///
->         if inlist(method,"2SPU_REu":methodlabel,"2SPU_REc":methodlabel), ///
+. siman nes pctbias ///
+>         if inlist(method,"PU_RE":methodlabel,"PU_REc":methodlabel), ///
 >         legend(pos(3) col(1)) stagger(.05) $PPT ///
 >         dglabsize(small) lw(*2 = = =) dglwidth(*2) ///
 >         lcol(red =) lpat(solid dash) ///
->         name(centring2SPU,replace)
-siman nestloop will draw 2 graphs (1 targets * 2 performance measures)
+>         name(centringPU,replace) yla(-15(5)5)
+siman nestloop will draw 1 graphs (1 targets * 1 performance measures)
+
+. siman nes cover ///
+>         if inlist(method,"PU_RE":methodlabel,"PU_REc":methodlabel), ///
+>         legend(pos(3) col(1)) stagger(.05) $PPT ///
+>         dglabsize(small) lw(*2 = = =) dglwidth(*2) ///
+>         lcol(red =) lpat(solid dash) ///
+>         name(centringPU,replace) yla(80(5)100)
+siman nestloop will draw 1 graphs (1 targets * 1 performance measures)
+
+. siman nes pctbias ///
+>         if inlist(method,"Wei_RE":methodlabel,"Wei_REc":methodlabel), ///
+>         legend(pos(3) col(1)) stagger(.05) $PPT ///
+>         dglabsize(small) lw(*2 = = =) dglwidth(*2) ///
+>         lcol(black =) lpat(solid dash) ///
+>         name(centringWei,replace) yla(-15(5)5)
+siman nestloop will draw 1 graphs (1 targets * 1 performance measures)
+
+. siman nes cover ///
+>         if inlist(method,"Wei_RE":methodlabel,"Wei_REc":methodlabel), ///
+>         legend(pos(3) col(1)) stagger(.05) $PPT ///
+>         dglabsize(small) lw(*2 = = =) dglwidth(*2) ///
+>         lcol(black =) lpat(solid dash) ///
+>         name(centringWei,replace) yla(80(5)100)
+siman nestloop will draw 1 graphs (1 targets * 1 performance measures)
 
 . table studies method if rep==-4, stat(min s) stat(max s)
 
----------------------------------------------------------------------------
-                  |                          method                        
-                  |  1SWei_REc   1SWei_REu   2SPU_REc   2SPU_REu      Total
-------------------+--------------------------------------------------------
-studies           |                                                        
-  5               |                                                        
-    Minimum value |   .8972858    .8984234   .9017511   .9037951   .8972858
-    Maximum value |   2.905633    2.901502   2.903346    2.91096    2.91096
-  20              |                                                        
-    Minimum value |   .4476406    .4462549   .4481794   .4489251   .4462549
-    Maximum value |   1.315204    1.302303   1.319397   1.307058   1.319397
-  Total           |                                                        
-    Minimum value |   .4476406    .4462549   .4481794   .4489251   .4462549
-    Maximum value |   2.905633    2.901502   2.903346    2.91096    2.91096
----------------------------------------------------------------------------
+-------------------------------------------------------------------------
+                  |                         method                       
+                  |   Wei_REc     Wei_RE     PU_REc      PU_RE      Total
+------------------+------------------------------------------------------
+studies           |                                                      
+  5               |                                                      
+    Minimum value |  .8972858   .8984234   .9017511   .9037951   .8972858
+    Maximum value |  2.905633   2.901502   2.903346    2.91096    2.91096
+  20              |                                                      
+    Minimum value |  .4476406   .4462549   .4481794   .4489251   .4462549
+    Maximum value |  1.315204   1.302303   1.319397   1.307058   1.319397
+  Total           |                                                      
+    Minimum value |  .4476406   .4462549   .4481794   .4489251   .4462549
+    Maximum value |  2.905633   2.901502   2.903346    2.91096    2.91096
+-------------------------------------------------------------------------
 
 . * pctbias: Monte Carlo error varies from 0.9 to 2.9 with 5 studies and from 0.4 to 1.3 with 20 studies
 . table studies method if rep==-13, stat(min s) stat(max s)
 
----------------------------------------------------------------------------
-                  |                          method                        
-                  |  1SWei_REc   1SWei_REu   2SPU_REc   2SPU_REu      Total
-------------------+--------------------------------------------------------
-studies           |                                                        
-  5               |                                                        
-    Minimum value |    .435544    .4461877   .4243731   .4433879   .4243731
-    Maximum value |   .7462801    .8607653    .741339   .8646815   .8646815
-  20              |                                                        
-    Minimum value |   .4512959    .4826956   .4622193   .4910754   .4512959
-    Maximum value |   .6261542     .884897   .6241935    .888263    .888263
-  Total           |                                                        
-    Minimum value |    .435544    .4461877   .4243731   .4433879   .4243731
-    Maximum value |   .7462801     .884897    .741339    .888263    .888263
----------------------------------------------------------------------------
+-------------------------------------------------------------------------
+                  |                         method                       
+                  |   Wei_REc     Wei_RE     PU_REc      PU_RE      Total
+------------------+------------------------------------------------------
+studies           |                                                      
+  5               |                                                      
+    Minimum value |   .435544   .4461877   .4243731   .4433879   .4243731
+    Maximum value |  .7462801   .8607653    .741339   .8646815   .8646815
+  20              |                                                      
+    Minimum value |  .4512959   .4826956   .4622193   .4910754   .4512959
+    Maximum value |  .6261542    .884897   .6241935    .888263    .888263
+  Total           |                                                      
+    Minimum value |   .435544   .4461877   .4243731   .4433879   .4243731
+    Maximum value |  .7462801    .884897    .741339    .888263    .888263
+-------------------------------------------------------------------------
 
 . * cover: Monte Carlo error varies from 0.4 to 0.9%.
 . 
 . 
-. // SCATTER PLOT OF DIFFERENCES FROM 1SC: HOM, CE METHODS
+. // SCATTER PLOT OF DIFFERENCES FROM C: HOM, CE METHODS
 . use twoSPcombine, clear
 (Combined results from twoSPsimrun and twoSPsimrun2)
 
-. drop error* tau1* tau2* s1* s2*
+. drop error* tauCox* tauWei* tauN* tauP* sCox* sWei* sN* sP*
 
-. foreach method in 2SN 2SPU {
-  2.         gen e`method' = b`method' - b1SCox
+. foreach method in N PU {
+  2.         gen e`method' = b`method' - bCox
   3. }
 
 . reshape long e, i(studies aratio gamma tau rep) j(method) string
-(j = 2SN 2SPU)
+(j = N PU)
 
 Data                               Wide   ->   Long
 -----------------------------------------------------------------------------
@@ -421,12 +460,12 @@ Number of observations           48,000   ->   96,000
 Number of variables                  27   ->   27          
 j variable (2 values)                     ->   method
 xij variables:
-                             e2SN e2SPU   ->   e
+                                 eN ePU   ->   e
 -----------------------------------------------------------------------------
 
-. label var e "Difference from 1-stage Cox"
+. label var e "Difference from Cox"
 
-. label var b1SCox "1-stage Cox"
+. label var bCox "Cox"
 
 . egen emean = mean(e), by(aratio method)
 
@@ -440,22 +479,28 @@ xij variables:
 . keep if studies==5 & tau==0
 (72,000 observations deleted)
 
-. *scatter e b1SC, mcol(blue) || line emean zero b1SC, lcol(blue black) by(method aratio gamma, legend(off) col(3) no
-> te("") t2title(gamma=-6                  gamma=-5                  gamma=-4)) ytitle("      2-stage Poisson        
->            2-stage Normal" "     aratio=2        aratio=1        aratio=2        aratio=1") subtitle("")
-. scatter e b1SCox, mcol(blue) || line emean zero b1SCox, lcol(blue black) by(method gamma aratio, legend(off) col(6)
->  note("") t2title("gamma=-6                                      gamma=-5                                      gamm
-> a=-4" "aratio=1                aratio=2                aratio=1                aratio=2                aratio=1    
->             aratio=2")) ytitle("    log HR, 2-stage Poisson      log HR, 2-stage Normal") xsize(9) ysize(5) subtitl
-> e("") name(discrep_ref,replace) xtitle("log HR, 1-stage Cox")
+. *scatter e bC, mcol(blue) || line emean zero bC, lcol(blue black) by(method aratio gamma, legend(off) col(3) note("") 
+> t2title(gamma=-6                  gamma=-5                  gamma=-4)) ytitle("      2-stage Poisson                  
+>  2-stage Normal" "     aratio=2        aratio=1        aratio=2        aratio=1") subtitle("")
+. scatter e bCox, mcol(blue) || ///
+>         line emean zero bCox, lcol(blue black) ///
+>         by(method gamma aratio, legend(off) col(6) note("") ///
+>                 t2title("gamma=-6                                      gamma=-5                                      g
+> amma=-4" "aratio=1                aratio=2                aratio=1                aratio=2                aratio=1    
+>             aratio=2")) ///
+>         ytitle("    log HR, Poisson approx     log HR, Normal approx") ///
+>         xsize(9) ysize(5) subtitle("") name(discrep_ref,replace) ///
+>         xlabel(,labsize(large)) ///
+>         ylabel(,labsize(large)) ///
+>         xtitle("log HR, Cox")
 
 . 
-. replace method = "2-stage Normal" if method=="2SN"
-variable method was str4 now str14
+. replace method = "Normal approx" if method=="N"
+variable method was str2 now str13
 (12,000 real changes made)
 
-. replace method = "2-stage Poisson" if method=="2SPU"
-variable method was str14 now str15
+. replace method = "Poisson approx" if method=="PU"
+variable method was str13 now str14
 (12,000 real changes made)
 
 . label var sdb "Standard deviation of point estimates"
@@ -485,18 +530,18 @@ H0: area(sdb) = area(sdbw)
 . use twoSPcombine, clear
 (Combined results from twoSPsimrun and twoSPsimrun2)
 
-. drop error* tau?*
+. drop error* tauCox* tauWei* tauN* tauP*
 
-. * drop all 2SP weighted
-. drop b2SPW* s2SPW*
+. * drop all P weighted
+. drop bPW* sPW*
 
-. * drop all 2SP ML uncentred
-. drop b2SPU_REu s2SPU_REu
+. * drop all P ML uncentred
+. drop bPU_RE sPU_RE
 
 . siman setup, dgm(aratio gamma studies tau) rep(rep) est(b) se(s) ///
->         method(1SCox 2SN 2SPU 1SWei_REc 2SN_RE 2SPU_REc) true(beta)
-Warning: siman setup found unwanted variables: n d singlezeroes doublezeroes sdb sdbw b1SCoxi s1SCoxi b1SWei s1SWei
-  b1SWei_REu s1SWei_REu
+>         method(Cox N PU Wei_REc N_RE PU_REc) true(beta)
+Warning: siman setup found unwanted variables: n d singlezeroes doublezeroes sdb sdbw bCox_i sCox_i bWei sWei bWei_RE
+  sWei_RE
 
                    SUMMARY OF DATA
 _____________________________________________________
@@ -513,7 +558,7 @@ Targets
 Methods
   Variable containing methods:    method
   Number of methods:              6
-  Method values:                  1SCox; 2SN; 2SPU; 1SWei_REc; 2SN_RE; 2SPU_REc
+  Method values:                  Cox; N; PU; Wei_REc; N_RE; PU_REc
 
 Repetition-level output
   Point estimate variable:        b
@@ -532,12 +577,11 @@ siman analyse has run successfully
 
 . 
 . * bias & power, homogeneous & CE methods
-. siman tab pctbias empse cover power if tau==0 & method<=3, col(method gamma studies) row(_perf aratio) nformat(%6.1
-> f)
+. siman tab pctbias empse cover power if tau==0 & method<=3, col(method gamma studies) row(_perf aratio) nformat(%6.1f)
 
 --------------------------------------------------------------------------------------------------------------------------------------------------
                     |                                                             method                                                          
-                    |                   1SCox                                      2SN                                       2SPU                 
+                    |                    Cox                                        N                                         PU                  
                     |                   gamma                                     gamma                                     gamma                 
                     |       -6            -5            -4            -6            -5            -4            -6            -5            -4    
                     |    studies       studies       studies       studies       studies       studies       studies       studies       studies  
@@ -579,11 +623,29 @@ Performance measure |
 --------------------------------------------------------------------------------------------------------------------------------------------------
 Note: Coverage and Power calculated at 95% level
 
-. siman nes pctbias empse cover power if tau==0 & method<=3, ///
+. siman nes pctbias if tau==0 & method<=3, ///
 >         legend(pos(3) col(1)) stagger(.05) $PPT ///
->         dglabsize(small) lw(*2 ...) dglwidth(*2) ///
+>         dglabsize(small) lw(*2 ...) dglwidth(*2) yla(-10 0 10 20) ///
 >         lcol(black blue red =) lpat(solid = = dash) name(homCE,replace)
-siman nestloop will draw 4 graphs (1 targets * 4 performance measures)
+siman nestloop will draw 1 graphs (1 targets * 1 performance measures)
+
+. siman nes empse if tau==0 & method<=3, ///
+>         legend(pos(3) col(1)) stagger(.05) $PPT ///
+>         dglabsize(small) lw(*2 ...) dglwidth(*2) yla(0 .1 .2 .3 .4) ///
+>         lcol(black blue red =) lpat(solid = = dash) name(homCE,replace)
+siman nestloop will draw 1 graphs (1 targets * 1 performance measures)
+
+. siman nes cover if tau==0 & method<=3, ///
+>         legend(pos(3) col(1)) stagger(.05) $PPT ///
+>         dglabsize(small) lw(*2 ...) dglwidth(*2) yla(94/98) ///
+>         lcol(black blue red =) lpat(solid = = dash) name(homCE,replace)
+siman nestloop will draw 1 graphs (1 targets * 1 performance measures)
+
+. siman nes power if tau==0 & method<=3, ///
+>         legend(pos(3) col(1)) stagger(.05) $PPT ///
+>         dglabsize(small) lw(*2 ...) dglwidth(*2) yla(0 50 100) ///
+>         lcol(black blue red =) lpat(solid = = dash) name(homCE,replace)
+siman nestloop will draw 1 graphs (1 targets * 1 performance measures)
 
 . * summarise MCSEs
 . table gamma studies if rep<0 & _perf=="pctbias" & tau==0 & method<=3, stat(max s) stat(min s) nformat(%6.1f)
@@ -619,8 +681,8 @@ gamma             |
 > ------------------------------------------------------------------------------------------------------
                     |                                                                                                                                           method                                  
 >                                                                                                       
-                    |                      1SCox                                            2SN                                             2SPU                                        1SWei_REc       
->                                 2SN_RE                                       2SPU_REc                 
+                    |                       Cox                                              N                                               PU                                          Wei_REc        
+>                                  N_RE                                         PU_REc                  
                     |                      gamma                                           gamma                                           gamma                                          gamma         
 >                                 gamma                                         gamma                   
                     |        -6              -5              -4              -6              -5              -4              -6              -5              -4              -6              -5         
@@ -701,11 +763,49 @@ Performance measure |
 > ------------------------------------------------------------------------------------------------------
 Note: Coverage and Power calculated at 95% level
 
+. siman nes pctbias if tau>0, ///
+>         legend(pos(3) col(1)) stagger(.08) $PPT ///
+>         dglabsize(small) lw(*2 ...) dglwidth(*2) ///
+>         lcol(black blue red black blue red) lpat(solid = = dash = =) ///
+>         name(het,replace) yla(-30 -20 -10 0) debug
+siman nestloop will draw 1 graphs (1 targets * 1 performance measures)
+Debug: nestloop b if __000003=="1" & _perfmeascode=="pctbias", descriptors(aratio gamma studies tau) method(method)  nam
+> e(het_1_pctbias,replace)  legend(pos(3) col(1)) stagger(.08) xtitle(,size(large)) ytitle(,size(large)) xlabel(,labsize
+> (large)) ylabel(,labsize(large)) legend(size(large)) xsize(9) ysize(5) subtitle(,size(large)) dglabsize(small) lw(*2 .
+> ..) dglwidth(*2) lcol(black blue red black blue red) lpat(solid = = dash = =) yla(-30 -20 -10 0) yline(0,lcol(gs12)) y
+> title(% bias) debug
+Warning: no variation for descriptor tau
+Debug: graph command is: graph twoway (line b __0000051 if method==1, c(J) lcolor(black) lpattern(solid) lwidth(*2)) (li
+> ne b __0000052 if method==2, c(J) lcolor(blue) lpattern(solid) lwidth(*2)) (line b __0000053 if method==3, c(J) lcolor
+> (red) lpattern(solid) lwidth(*2)) (line b __0000054 if method==4, c(J) lcolor(black) lpattern(dash) lwidth(*2)) (line 
+> b __0000055 if method==5, c(J) lcolor(blue) lpattern(dash) lwidth(*2)) (line b __0000056 if method==6, c(J) lcolor(red
+> ) lpattern(dash) lwidth(*2)) (line __000007 __000008 __000009 __000005, c(J ...) lcol(gs4 ...) lpattern(solid ...) lwi
+> dth(*2 ...) lstyle( ...) ) , legend(order(1 `"Cox"' 2 `"N"' 3 `"PU"' 4 `"Wei_REc"' 5 `"N_RE"' 6 `"PU_REc"')  position(
+> 3) cols(1)) ytitle(b) xla(none) xtitle("") yla(,nogrid) text(-38.44597686486586 1 `"aratio (1, 2)"', place(e) col(gs4)
+>  size(small) justification(left)) text(-35.31378460228444 1 `"gamma (-6, -5, -4)"', place(e) col(gs4) size(small) just
+> ification(left)) text(-32.18159233970302 1 `"studies (5, 20)"', place(e) col(gs4) size(small) justification(left)) nam
+> e(het_1_pctbias,replace)    xtitle(,size(large)) ytitle(,size(large)) xlabel(,labsize(large)) ylabel(,labsize(large)) 
+> legend(size(large)) xsize(9) ysize(5) subtitle(,size(large)) yla(-30 -20 -10 0) yline(0,lcol(gs12)) ytitle(% bias)
+
+. siman nes empse if tau>0, ///
+>         legend(pos(3) col(1)) stagger(.08) $PPT ///
+>         dglabsize(small) lw(*2 ...) dglwidth(*2) ///
+>         lcol(black blue red black blue red) lpat(solid = = dash = =) ///
+>         name(het,replace) 
+siman nestloop will draw 1 graphs (1 targets * 1 performance measures)
+
+. siman nes cover if tau>0, ///
+>         legend(pos(3) col(1)) stagger(.08) $PPT ///
+>         dglabsize(small) lw(*2 ...) dglwidth(*2) ///
+>         lcol(black blue red black blue red) lpat(solid = = dash = =) ///
+>         name(het,replace) yla(70 80 90 100)
+siman nestloop will draw 1 graphs (1 targets * 1 performance measures)
+
 . siman nes pctbias empse cover power if tau>0, ///
 >         legend(pos(3) col(1)) stagger(.08) $PPT ///
 >         dglabsize(small) lw(*2 ...) dglwidth(*2) ///
 >         lcol(black blue red black blue red) lpat(solid = = dash = =) ///
->         name(het,replace)
+>         name(het,replace) yla(0 50 100)
 siman nestloop will draw 4 graphs (1 targets * 4 performance measures)
 
 . 
@@ -804,17 +904,17 @@ gamma             |
 . use twoSPcombine, clear
 (Combined results from twoSPsimrun and twoSPsimrun2)
 
-. drop error* b1* b2* s1* s2*
+. drop error* bCox* bWei* bN* bP* sCox* sWei* sN* sP*
 
 . rename tau truetau
 
-. * drop all 2SP ML weighted or uncentred
-. drop tau2SPW* tau2SPU_REu
+. * drop all P ML weighted or uncentred
+. drop tauPW* tauPU_RE
 
 . siman setup, dgm(aratio gamma studies truetau) rep(rep) est(tau) ///
->         method(2SN_RE 2SPU_REc) true(truetau)
-Warning: siman setup found unwanted variables: beta n d singlezeroes doublezeroes sdb sdbw tau1SCoxi tau1SWei
-  tau1SWei_REu tau1SWei_REc tau1SCox tau2SN tau2SPU
+>         method(N_RE PU_REc) true(truetau)
+Warning: siman setup found unwanted variables: beta n d singlezeroes doublezeroes sdb sdbw tauCox_i tauWei tauWei_RE
+  tauWei_REc tauCox tauN tauPU
 
                    SUMMARY OF DATA
 _____________________________________________________
@@ -831,7 +931,7 @@ Targets
 Methods
   Variable containing methods:    method
   Number of methods:              2
-  Method values:                  2SN_RE; 2SPU_REc
+  Method values:                  N_RE; PU_REc
 
 Repetition-level output
   Point estimate variable:        tau
@@ -853,7 +953,7 @@ siman analyse has run successfully
 
 -----------------------------------------------
                          |         method      
-                         |    2SN_RE   2SPU_REc
+                         |      N_RE     PU_REc
 -------------------------+---------------------
 truetau                  |                     
   .3                     |                     
@@ -917,7 +1017,7 @@ truetau                  |
 . siman nes mean if truetau>0, ///
 >         legend(pos(3) col(1)) stagger(.05) ///
 >         $PPT dglabsize(small) lw(*2 = = =) dglwidth(*2) ///
->         lcol(blue red) lpat(dash dash) name(tauhet,replace)
+>         lcol(blue red) lpat(dash dash) name(tauhet,replace) yla(0 .1 .2 .3)
 siman nestloop will draw 1 graphs (1 targets * 1 performance measures)
 
 . table gamma studies if rep<0 & _perf=="mean" & truetau>0, stat(max _se) stat(min _se) nformat(%6.3f)
@@ -954,5 +1054,5 @@ end of do-file
       name:  <unnamed>
        log:  C:\ian\git\TwoStagePoisson\simulation\twoSPsimresults.log
   log type:  text
- closed on:  26 Mar 2026, 14:58:04
----------------------------------------------------------------------------------------------------------------------
+ closed on:  24 Apr 2026, 18:19:13
+------------------------------------------------------------------------------------------------------------------------

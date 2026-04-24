@@ -37,6 +37,11 @@ Description
 Inputs
 	twoSPsimprog.do - defines programs twoSPsimgen to generate data and twoSPsimana to analyse them
 	twoSPsimrun.do - uses simrun package to run simulation and compute graphs & tables of performance measures
+	twoSPsimrun2.do - as twoSPsimrun.do, but different methods
+	twoSPcombine.do - takes both sets of results and combines into twoSPcombine.dta
+	twoSPsimresults.do - produce all graphs and tables from twoSPcombine.dta
 Outputs
 	simrun_results (folder) - estimates datasets and random number generator states
 	twoSPsimrun.log - main results
+	twoSPcombine.dta - combined data set
+	twoSPsimresults.log

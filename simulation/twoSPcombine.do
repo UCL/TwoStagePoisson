@@ -2,6 +2,7 @@
 twoSPcombine.do
 IW 26mar2026
 combine results of the two runs (same setting, different methods) in data twoSPcombine.dta
+24apr2026 methods renamed 
 */
 
 // Check the two data sets agree
@@ -43,9 +44,11 @@ drop _merge
 
 // relabel methods
 drop *2SN_ML
-rename (*1SC) (*1SCox)
-rename (*1SCinter) (*1SCoxi)
-rename (*_ML) (*_REu)
+rename (*1SC) (*Cox)
+rename (*1SCinter) (*Cox_i)
+rename (*1SWei*) (*Wei*)
+rename (*2S*) (**)
+rename (*_ML) (*_RE)
 rename (*_MLc) (*_REc)
 rename (*_REML) (*_RE)
 
